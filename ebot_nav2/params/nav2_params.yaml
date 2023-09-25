@@ -1,12 +1,12 @@
 amcl:
   ros__parameters:
     use_sim_time: True
-    alpha1: 0.2
-    alpha2: 0.2
-    alpha3: 0.2
-    alpha4: 0.2
-    alpha5: 0.2
-    base_frame_id: "base_link"
+    alpha1: 0.00005   ## alpha's are related to odom model tuning, refer Nav2 Docs
+    alpha2: 0.00005
+    alpha3: 0.00005
+    alpha4: 0.00005
+    alpha5: 0.00005
+    base_frame_id: "base_footprint" #
     beam_skip_distance: 0.5
     beam_skip_error_threshold: 0.9
     beam_skip_threshold: 0.3
@@ -186,6 +186,7 @@ controller_server_rclcpp_node:
   ros__parameters:
     use_sim_time: True
 
+
 local_costmap:
   local_costmap:
     ros__parameters:
@@ -195,8 +196,8 @@ local_costmap:
       robot_base_frame: "base_footprint"
       use_sim_time: True
       rolling_window: true
-      width: 5
-      height: 5
+      width: 3
+      height: 3
       resolution: 0.05
       footprint: "[ [0.21, 0.195], [0.21, -0.195], [-0.21, -0.195], [-0.21, 0.195] ]"
       plugins: ["voxel_layer", "inflation_layer"]
@@ -275,6 +276,7 @@ global_costmap:
     ros__parameters:
       use_sim_time: True
 
+
 map_server:
   ros__parameters:
     use_sim_time: True
@@ -302,6 +304,7 @@ planner_server:
 planner_server_rclcpp_node:
   ros__parameters:
     use_sim_time: True
+
 
 recoveries_server:
   ros__parameters:
