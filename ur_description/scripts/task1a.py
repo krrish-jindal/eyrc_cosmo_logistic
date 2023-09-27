@@ -44,6 +44,8 @@ from scipy.spatial.transform import Rotation as R
 from sensor_msgs.msg import CompressedImage, Image
 from cv2 import aruco
 from builtin_interfaces.msg import Time
+from geometry_msgs.msg import Quaternion
+from tf_transformations import quaternion_from_euler
 
 
 ##################### FUNCTION DEFINITIONS #######################
@@ -95,7 +97,7 @@ def detect_aruco(image):
 		# The camera matrix is defined as per camera info loaded from the plugin used. 
 		# You may get this from /camer_info topic when camera is spawned in gazebo.
 		# Make sure you verify this matrix once if there are calibration issues.
-		cam_mat = np.array([[931.1829833984375, 0.0, 640.0], [0.0, 931.1829833984375, 360.0], [0.0, 0.0, 1.0]])
+		cam_mat = np.array([[931.1829833984375, 0.0, 640.0], [0.0, 931.1829833984375, 360.0], [0.0, 0.0, 1.0]],dtype=np.float32)
 
 		# The distortion matrix is currently set to 0. 
 		# We will be using it during Stage 2 hardware as Intel Realsense Camera provides these camera info.
@@ -140,12 +142,20 @@ def detect_aruco(image):
 				list_1 = current_rvec.tolist()
 				flat_list.append(list_1)
 				angle_aruco_list = [item[0] for item in flat_list]
+				# print(math.degrees(angle_aruco_list[i][2]))
+				# print((angle_aruco_list[i][2]))
+				rotation_mat, _ = cv2.Rodrigues(current_rvec)
+				print(current_rvec[0])
+				print("!!!!!!!!!!!!!!")
+				
 
 				width_aruco_list.append(width)
 				cv2.aruco.drawDetectedMarkers(image, corners)
 				# cv2.putText(image, f"Distance: {distance_from_rgb_list[i]:.2f} cm", (int(corners[i][0][0][0]), int(corners[i][0][0][1]) + 20), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 0), 2)
-				cv2.putText(image, f"center{center_x, center_y}", (int(center_x), int(center_y)), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 0, 255), 2)
+				# cv2.putText(image, f"center{center_x, center_y}", (int(center_x), int(center_y)), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 0, 255), 2)
 				cv2.putText(image, f"ID: {aruco_id[i]}", (int(corners[i][0][0][0]), int(corners[i][0][0][1]) - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 0, 255), 2)
+				# cv2.putText(image, f"{angle_aruco_list[i]}", (int(center_x), int(center_y)), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 0, 255), 2)
+				cv2.drawFrameAxes(image,dist_mat, cam_mat, current_rvec[0] , current_tvec[0],2,1)	
 				cv2.circle(image, (center_x ,center_y), 2, (255, 0, 0), 6)
 		cv2.imshow("Aruco Detection", image)
 		cv2.waitKey(1)  # Wait for 1ms
@@ -192,7 +202,7 @@ class aruco_tf(Node):
 
 		############ Constructor VARIABLES/OBJECTS ############
 
-		image_processing_rate = 2                                                   # rate of time to process image (seconds)
+		image_processing_rate = 2.5                                                   # rate of time to process image (seconds)
 		self.bridge = CvBridge()                                                        # initialise CvBridge object for image conversion
 		self.tf_buffer = tf2_ros.buffer.Buffer()                                        # buffer time used for listening transforms
 		self.listener = tf2_ros.TransformListener(self.tf_buffer, self)
@@ -288,10 +298,12 @@ class aruco_tf(Node):
 			# Correct the aruco angle using the correction formula
 			angle_aruco = (0.788 * angle_aruco[2]) - ((angle_aruco[2] ** 2) / 3160)
 
-			roll, pitch, yaw = 1.57, 0, angle_aruco
+			roll, pitch, yaw = 0, 0, angle_aruco
+			q_rot = quaternion_from_euler(roll,pitch,yaw)
+
 			r = R.from_euler('xyz', [roll, pitch, yaw], degrees=True)
 			quaternion = r.as_quat()
-			print(quaternion)
+			# print("raw---",q_rot)
 		
 			# Calculate the transform matrix (rotation and translation)
 			# transform_matrix = np.eye(4)
@@ -303,15 +315,15 @@ class aruco_tf(Node):
 			# You can use the scipy library for this purpose
 			# roll, pitch, yaw = 0, 0, angle_aruco  #pitch=y(green),roll=x(red),yaw=z(blue) 
 
-			# qy = quaternion[0]
-			# qz = quaternion[1]
-			# qx = quaternion[2]
-			# qw = quaternion[3]
+			qy = q_rot[1]
+			qz = q_rot[2]
+			qx = q_rot[0]
+			qw = q_rot[3]
 
-			qx = np.sin(roll/2) * np.cos(pitch/2) * np.cos(yaw/2) - np.cos(roll/2) * np.sin(pitch/2) * np.sin(yaw/2)
-			qy = np.cos(roll/2) * np.sin(pitch/2) * np.cos(yaw/2) + np.sin(roll/2) * np.cos(pitch/2) * np.sin(yaw/2)
-			qw = np.cos(roll/2) * np.cos(pitch/2) * np.sin(yaw/2) - np.sin(roll/2) * np.sin(pitch/2) * np.cos(yaw/2)
-			qz = np.cos(roll/2) * np.cos(pitch/2) * np.cos(yaw/2) + np.sin(roll/2) * np.sin(pitch/2) * np.sin(yaw/2)
+			# qx = np.sin(roll/2) * np.cos(pitch/2) * np.cos(yaw/2) - np.cos(roll/2) * np.sin(pitch/2) * np.sin(yaw/2)
+			# qy = np.cos(roll/2) * np.sin(pitch/2) * np.cos(yaw/2) + np.sin(roll/2) * np.cos(pitch/2) * np.sin(yaw/2)
+			# qw = np.cos(roll/2) * np.cos(pitch/2) * np.sin(yaw/2) - np.sin(roll/2) * np.sin(pitch/2) * np.cos(yaw/2)
+			# qz = np.cos(roll/2) * np.cos(pitch/2) * np.cos(yaw/2) + np.sin(roll/2) * np.sin(pitch/2) * np.sin(yaw/2)
 			x = tvec[i][0][0]
 			y = tvec[i][0][1]
 			z = tvec[i][0][2]
@@ -320,7 +332,7 @@ class aruco_tf(Node):
 			x_1 = distance/100
 
 			print("!!!")
-			# print(center_list)
+			# print("main---",qx,qy,qz,qw)
 
 
 			print("@@@@@@@@@@@@@@@@@@")
