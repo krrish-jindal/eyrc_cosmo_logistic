@@ -127,33 +127,45 @@ def detect_aruco(image):
 
 			coordinates= [x1,y1,x2,y2,x3,y3]
 			area, width = calculate_rectangle_area(coordinates)
-
+			rvecs, tvecs, trash =my_estimatePoseSingleMarkers(corners, size_of_aruco_cm, cam_mat, dist_mat)
 			if area >= aruco_area_threshold:
+				print("################################################")
+				print(rvecs)
 				rvec , tvec, _ = cv2.aruco.estimatePoseSingleMarkers(corners, size_of_aruco_cm, cam_mat, dist_mat)
 				ids.append(int(aruco_id[i]))
 				current_rvec = rvec[i]
 				current_tvec = tvec[i]
-				
+
 				# center_aruco = current_tvec.squeeze()
 				center_aruco = np.mean(corners[i][0], axis=0)
 				center_x, center_y = map(int, center_aruco)
-	
-				distance_from_rgb = cv2.norm(current_tvec)
+				
+				distance_from_rgb = float(tvecs[i][2])
 
 				center_aruco_list.append((center_x,center_y))
 				distance_from_rgb_list.append(distance_from_rgb)
+
 
 				#  Angle cal
 				list_1 = current_rvec.tolist()
 				# print(math.degrees(angle_aruco_list[i][2]))
 				# print((angle_aruco_list[i][2]))
 				rotation_mat, _ = cv2.Rodrigues(current_rvec)
+				rotation_matrix, _ = cv2.Rodrigues(current_rvec)
+
+				new = rotation_matrix[0].flatten().tolist()
+
+
 				list=rotationMatrixToEulerAngles (rotation_mat)
 				angle_aruco_list.append(list)
+				flat_list.append(new)
+				print(rotation_matrix)
+				print("LLLLLLLLLLLLL")
+				print(new)
+
 				# angle_aruco_list = [item[0] for item in flat_list]
 
-				# print(rvec)
-				print(list)
+
 				
 
 				width_aruco_list.append(width)
@@ -166,7 +178,6 @@ def detect_aruco(image):
 				cv2.circle(image, (center_x ,center_y), 2, (255, 0, 0), 6)
 		cv2.imshow("Aruco Detection", image)
 		cv2.waitKey(1)  # Wait for 1ms
-		print(angle_aruco_list)
 	
 		############ ADD YOUR CODE HERE ############
 
@@ -181,6 +192,53 @@ def detect_aruco(image):
 		############################################	
 		# cv2.destroyAllWindows()
 		return center_aruco_list, distance_from_rgb_list, angle_aruco_list, width_aruco_list, ids, tvec,rvec
+
+def my_estimatePoseSingleMarkers(corners, marker_size, mtx, distortion):
+	'''
+	This will estimate the rvec and tvec for each of the marker corners detected by:
+	   corners, ids, rejectedImgPoints = detector.detectMarkers(image)
+	corners - is an array of detected corners for each detected marker in the image
+	marker_size - is the size of the detected markers
+	mtx - is the camera matrix
+	distortion - is the camera distortion matrix
+	RETURN list of rvecs, tvecs, and trash (so that it corresponds to the old estimatePoseSingleMarkers())
+	'''
+	marker_points = np.array([[-marker_size / 2, marker_size / 2, 0],
+							  [marker_size / 2, marker_size / 2, 0],
+							  [marker_size / 2, -marker_size / 2, 0],
+							  [-marker_size / 2, -marker_size / 2, 0]], dtype=np.float32)
+	trash = []
+	rvecs = []
+	tvecs = []
+	i = 0
+	for c in corners:
+		nada, R, t = cv2.solvePnP(marker_points, corners[i], mtx, distortion, False, cv2.SOLVEPNP_IPPE_SQUARE)
+		rvecs.append(R)
+		tvecs.append(t)
+		trash.append(nada)
+	return rvecs, tvecs, trash
+
+# def yawpitchrolldecomposition(R):
+
+# 	sin_x    = math.sqrt(R[2,0] * R[2,0] +  R[2,1] * R[2,1])    
+# 	validity  = sin_x < 1e-6
+# 	if not singular:
+# 		z1    = math.atan2(R[2,0], R[2,1])     # around z1-axis
+# 		x      = math.atan2(sin_x,  R[2,2])     # around x-axis
+# 		z2    = math.atan2(R[0,2], -R[1,2])    # around z2-axis
+# 	else: # gimbal lock
+# 		z1    = 0                                         # around z1-axis
+# 		x      = math.atan2(sin_x,  R[2,2])     # around x-axis
+# 		z2    = 0                                         # around z2-axis
+	
+# 	return np.array([[z1], [x], [z2]])
+
+# yawpitchroll_angles = -180*yawpitchrolldecomposition(rmat)/math.pi
+# yawpitchroll_angles[0,0] = (360-yawpitchroll_angles[0,0])%360 # change rotation sense if needed, comment this line otherwise
+# yawpitchroll_angles[1,0] = yawpitchroll_angles[1,0]+90
+
+
+
 def rotationMatrixToEulerAngles (R): 
 	sy = math.sqrt(R[0, 0]* R[0, 0] + R[1, 0] * R[1, 0])
 	singular =sy < 1e-6
@@ -308,22 +366,16 @@ class aruco_tf(Node):
 	# Get the ArUco ID, distance, angle, and width for the current marker
 
 			aruco_id = ids[i]
-			distance = distance_list[i]-4
+			distance = distance_list[i]
 			angle_aruco = angle_list[i]
 			width_aruco = width_list[i]
 			center=center_list[i]
-			# print(center_list[0][0])
 			# Correct the aruco angle using the correction formula
 			angle_aruco = ((0.788 * angle_aruco[2]) - ((angle_aruco[2] ** 2) / 3160)) 
 			
-			# print((angle_list[0]))
-			# print((angle_list[1]))
-			# print((angle_list[2]))
-			# print(angle_aruco)
-			# print("!!!")
 			roll, pitch, yaw =  0 , 0 ,(angle_aruco)
 			q_rot = quaternion_from_euler(roll,pitch,yaw)
-			# print(q_rot)
+
 
 			# r = R.from_euler('xyz', [roll, pitch, yaw], degrees=True)
 			# quaternion = r.as_quat()
@@ -351,14 +403,16 @@ class aruco_tf(Node):
 			# qy = np.cos(roll/2) * np.sin(pitch/2) * np.cos(yaw/2) + np.sin(roll/2) * np.cos(pitch/2) * np.sin(yaw/2)
 			# qw = np.cos(roll/2) * np.cos(pitch/2) * np.sin(yaw/2) - np.sin(roll/2) * np.sin(pitch/2) * np.cos(yaw/2)
 			# qz = np.cos(roll/2) * np.cos(pitch/2) * np.cos(yaw/2) + np.sin(roll/2) * np.sin(pitch/2) * np.sin(yaw/2)
-			x = tvec[i][0][0]
-			y = tvec[i][0][1]
-			z = tvec[i][0][2]
+			y = tvec[i][0][0]
+			z = tvec[i][0][1]
+			x = tvec[i][0][2]/100
+			print(x,y,z)
 			y_1 = (distance/100 * (sizeCamX - center_list[i][0] - centerCamX) / focalX)+0.02
 			z_1 = (distance/100 * (sizeCamY - center_list[i][1] - centerCamY) / focalY)
 			x_1 = distance/100
+			print("GGGGGGG")
+			print(x_1,y_1,z_1)
 
-			# print("main---",qx,qy,qz,qw)
 
 
 			print("@@@@@@@@@@@@@@@@@@")
