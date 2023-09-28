@@ -48,6 +48,8 @@ from geometry_msgs.msg import Quaternion
 from tf_transformations import quaternion_from_euler
 from tf2_ros.transform_listener import TransformListener
 from tf2_ros.buffer import Buffer
+import tf_transformations
+
 
 
 
@@ -143,13 +145,15 @@ def detect_aruco(image):
 
 				#  Angle cal
 				list_1 = current_rvec.tolist()
-				flat_list.append(list_1)
-				angle_aruco_list = [item[0] for item in flat_list]
 				# print(math.degrees(angle_aruco_list[i][2]))
 				# print((angle_aruco_list[i][2]))
 				rotation_mat, _ = cv2.Rodrigues(current_rvec)
+				list=rotationMatrixToEulerAngles (rotation_mat)
+				angle_aruco_list.append(list)
+				# angle_aruco_list = [item[0] for item in flat_list]
+
 				# print(rvec)
-				print("!!!!!!!!!!!!!!")
+				print(list)
 				
 
 				width_aruco_list.append(width)
@@ -162,6 +166,7 @@ def detect_aruco(image):
 				cv2.circle(image, (center_x ,center_y), 2, (255, 0, 0), 6)
 		cv2.imshow("Aruco Detection", image)
 		cv2.waitKey(1)  # Wait for 1ms
+		print(angle_aruco_list)
 	
 		############ ADD YOUR CODE HERE ############
 
@@ -175,8 +180,19 @@ def detect_aruco(image):
 
 		############################################	
 		# cv2.destroyAllWindows()
-		return center_aruco_list, distance_from_rgb_list, angle_aruco_list, width_aruco_list, ids, tvec
-
+		return center_aruco_list, distance_from_rgb_list, angle_aruco_list, width_aruco_list, ids, tvec,rvec
+def rotationMatrixToEulerAngles (R): 
+	sy = math.sqrt(R[0, 0]* R[0, 0] + R[1, 0] * R[1, 0])
+	singular =sy < 1e-6
+	if not singular:
+		x = math.atan2(R[2, 1], R[2,2])
+		y = math.atan2(-R[2, 0], sy)
+		z = math.atan2(R[1, 0], R[0, 0])
+	else:
+		x = math.atan2(-R[1, 2], R[1, 1])
+		y = math.atan2(-R[2, 0], sy)
+		z = 0
+	return np.array([x, y, z])
 
 ##################### CLASS DEFINITION #######################
 
@@ -286,37 +302,40 @@ class aruco_tf(Node):
 		focalX = 931.1829833984375
 		focalY = 931.1829833984375
 		
-		center_list, distance_list, angle_list, width_list, ids,tvec = detect_aruco(self.cv_image)
-
+		center_list, distance_list, angle_list, width_list, ids,tvec,rvec = detect_aruco(self.cv_image)
 		# Add your image processing code here
 		for i in range(len(ids)):
 	# Get the ArUco ID, distance, angle, and width for the current marker
 
 			aruco_id = ids[i]
-			distance = distance_list[i]
+			distance = distance_list[i]-4
 			angle_aruco = angle_list[i]
 			width_aruco = width_list[i]
 			center=center_list[i]
 			# print(center_list[0][0])
 			# Correct the aruco angle using the correction formula
-			angle_aruco = ((0.788 * angle_aruco[2]) - ((angle_aruco[2] ** 2) / 3160)) % ((math.pi))
+			angle_aruco = ((0.788 * angle_aruco[2]) - ((angle_aruco[2] ** 2) / 3160)) 
+			
 			# print((angle_list[0]))
 			# print((angle_list[1]))
 			# print((angle_list[2]))
 			# print(angle_aruco)
-			print("!!!")
-			roll, pitch, yaw =  0.75 , -1.57 , angle_aruco
+			# print("!!!")
+			roll, pitch, yaw =  0 , 0 ,(angle_aruco)
 			q_rot = quaternion_from_euler(roll,pitch,yaw)
-			print(q_rot)
+			# print(q_rot)
 
-			r = R.from_euler('xyz', [roll, pitch, yaw], degrees=True)
-			quaternion = r.as_quat()
-			# print("raw---",q_rot)
-		
+			# r = R.from_euler('xyz', [roll, pitch, yaw], degrees=True)
+			# quaternion = r.as_quat()
+			# # print("raw---",q_rot)
+			# rot_matrix = np.eye(4)
+			# rot_matrix[0:3, 0:3] = cv2.Rodrigues(np.array(rvec[i][0]))[0]
+			# quat = tf_transformations.quaternion_from_matrix(rot_matrix)
 			# Calculate the transform matrix (rotation and translation)
 			# transform_matrix = np.eye(4)
 			# transform_matrix[:3, :3] = r.as_matrix()
 			# transform_matrix[:3, 3] = [tvec[i][0][0], tvec[i][0][1], tvec[i][0][2]]
+			# print(q)
 # 
 
 			# Calculate quaternions from roll, pitch, and yaw (where roll and pitch are 0)
@@ -335,7 +354,7 @@ class aruco_tf(Node):
 			x = tvec[i][0][0]
 			y = tvec[i][0][1]
 			z = tvec[i][0][2]
-			y_1 = (distance/100 * (sizeCamX - center_list[i][0] - centerCamX) / focalX)
+			y_1 = (distance/100 * (sizeCamX - center_list[i][0] - centerCamX) / focalX)+0.02
 			z_1 = (distance/100 * (sizeCamY - center_list[i][1] - centerCamY) / focalY)
 			x_1 = distance/100
 
