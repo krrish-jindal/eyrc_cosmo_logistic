@@ -46,6 +46,9 @@ from cv2 import aruco
 from builtin_interfaces.msg import Time
 from geometry_msgs.msg import Quaternion
 from tf_transformations import quaternion_from_euler
+from tf2_ros.transform_listener import TransformListener
+from tf2_ros.buffer import Buffer
+
 
 
 ##################### FUNCTION DEFINITIONS #######################
@@ -145,7 +148,7 @@ def detect_aruco(image):
 				# print(math.degrees(angle_aruco_list[i][2]))
 				# print((angle_aruco_list[i][2]))
 				rotation_mat, _ = cv2.Rodrigues(current_rvec)
-				print(current_rvec[0])
+				# print(rvec)
 				print("!!!!!!!!!!!!!!")
 				
 
@@ -155,7 +158,7 @@ def detect_aruco(image):
 				# cv2.putText(image, f"center{center_x, center_y}", (int(center_x), int(center_y)), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 0, 255), 2)
 				cv2.putText(image, f"ID: {aruco_id[i]}", (int(corners[i][0][0][0]), int(corners[i][0][0][1]) - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 0, 255), 2)
 				# cv2.putText(image, f"{angle_aruco_list[i]}", (int(center_x), int(center_y)), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 0, 255), 2)
-				cv2.drawFrameAxes(image,dist_mat, cam_mat, current_rvec[0] , current_tvec[0],2,1)	
+				cv2.drawFrameAxes(image,cam_mat, dist_mat, current_rvec[0], current_tvec[0],4,4)	
 				cv2.circle(image, (center_x ,center_y), 2, (255, 0, 0), 6)
 		cv2.imshow("Aruco Detection", image)
 		cv2.waitKey(1)  # Wait for 1ms
@@ -202,7 +205,7 @@ class aruco_tf(Node):
 
 		############ Constructor VARIABLES/OBJECTS ############
 
-		image_processing_rate = 2.5                                                   # rate of time to process image (seconds)
+		image_processing_rate = 2                                                  # rate of time to process image (seconds)
 		self.bridge = CvBridge()                                                        # initialise CvBridge object for image conversion
 		self.tf_buffer = tf2_ros.buffer.Buffer()                                        # buffer time used for listening transforms
 		self.listener = tf2_ros.TransformListener(self.tf_buffer, self)
@@ -290,16 +293,21 @@ class aruco_tf(Node):
 	# Get the ArUco ID, distance, angle, and width for the current marker
 
 			aruco_id = ids[i]
-			distance = distance_list[i]-3
+			distance = distance_list[i]
 			angle_aruco = angle_list[i]
 			width_aruco = width_list[i]
 			center=center_list[i]
 			# print(center_list[0][0])
 			# Correct the aruco angle using the correction formula
-			angle_aruco = (0.788 * angle_aruco[2]) - ((angle_aruco[2] ** 2) / 3160)
-
-			roll, pitch, yaw = 0, 0, angle_aruco
+			angle_aruco = ((0.788 * angle_aruco[2]) - ((angle_aruco[2] ** 2) / 3160)) % ((math.pi))
+			# print((angle_list[0]))
+			# print((angle_list[1]))
+			# print((angle_list[2]))
+			# print(angle_aruco)
+			print("!!!")
+			roll, pitch, yaw =  0.75 , -1.57 , angle_aruco
 			q_rot = quaternion_from_euler(roll,pitch,yaw)
+			print(q_rot)
 
 			r = R.from_euler('xyz', [roll, pitch, yaw], degrees=True)
 			quaternion = r.as_quat()
@@ -327,11 +335,10 @@ class aruco_tf(Node):
 			x = tvec[i][0][0]
 			y = tvec[i][0][1]
 			z = tvec[i][0][2]
-			y_1 = distance/100 * (sizeCamX - center_list[i][0] - centerCamX) / focalX
-			z_1 = distance/100 * (sizeCamY - center_list[i][1] - centerCamY) / focalY
+			y_1 = (distance/100 * (sizeCamX - center_list[i][0] - centerCamX) / focalX)
+			z_1 = (distance/100 * (sizeCamY - center_list[i][1] - centerCamY) / focalY)
 			x_1 = distance/100
 
-			print("!!!")
 			# print("main---",qx,qy,qz,qw)
 
 
@@ -352,7 +359,23 @@ class aruco_tf(Node):
 			transform_msg.transform.rotation.w = qw
 			self.br.sendTransform(transform_msg)
 
-			# 	transform = node.tf_buffer.lookup_transform('base_link', transform_msg.child_frame_id, rclpy.time.Time())
+			try:
+				t = self.tf_buffer.lookup_transform('base_link', transform_msg.child_frame_id, rclpy.time.Time())
+				# print(t)
+				transform_msg.header.stamp = self.get_clock().now().to_msg()
+
+				transform_msg.header.frame_id = 'base_link'
+				transform_msg.child_frame_id = f'obj_{aruco_id}'
+				transform_msg.transform.translation.x = t.transform.translation.x
+				transform_msg.transform.translation.y = t.transform.translation.y
+				transform_msg.transform.translation.z = t.transform.translation.z
+				transform_msg.transform.rotation.x = t.transform.rotation.x
+				transform_msg.transform.rotation.y = t.transform.rotation.y
+				transform_msg.transform.rotation.z = t.transform.rotation.z
+				transform_msg.transform.rotation.w = t.transform.rotation.w
+				self.br.sendTransform(transform_msg)
+			except:
+				pass
 
 
 			# Calculate the transform matrix (rotation and translation)
