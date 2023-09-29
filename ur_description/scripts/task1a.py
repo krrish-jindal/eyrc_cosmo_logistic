@@ -46,6 +46,7 @@ from cv2 import aruco
 from builtin_interfaces.msg import Time
 from geometry_msgs.msg import Quaternion
 from tf_transformations import quaternion_from_euler
+import tf_transformations
 
 
 ##################### FUNCTION DEFINITIONS #######################
@@ -141,10 +142,7 @@ def detect_aruco(image):
 				flat_list.append(list_1)
 				angle_aruco_list = [item[0] for item in flat_list]
 				rotation_mat, _ = cv2.Rodrigues(current_rvec)
-				print(current_rvec[0])
-				print("!!!!!!!!!!!!!!")
 				
-
 				width_aruco_list.append(width)
 				cv2.aruco.drawDetectedMarkers(image, corners)
 				# cv2.putText(image, f"Distance: {distance_from_rgb_list[i]:.2f} cm", (int(corners[i][0][0][0]), int(corners[i][0][0][1]) + 20), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 0), 2)
@@ -277,7 +275,8 @@ class aruco_tf(Node):
 		focalY = 931.1829833984375
 		
 		center_list, distance_list, angle_list, width_list, ids,tvec = detect_aruco(self.cv_image)
-
+		rpy = []
+		list_rpy = []
 		# Add your image processing code here
 		for i in range(len(ids)):
 	# Get the ArUco ID, distance, angle, and width for the current marker
@@ -289,9 +288,32 @@ class aruco_tf(Node):
 			center=center_list[i]
 			# print(center_list[0][0])
 			# Correct the aruco angle using the correction formula
-			angle_aruco = ((1 * angle_aruco[2]) - ((angle_aruco[2] ** 2) / 3160)) % (math.pi + 0.6)
+			angle_aruco = ((0.788*angle_aruco[2]) - ((angle_aruco[2]**2)/3160)) % math.pi
 
-			roll, pitch, yaw = 1.5, -0.15, angle_aruco - 2
+
+			roll, pitch, yaw = 0, 0, angle_aruco
+			rpy.append(roll)
+			rpy.append(pitch)
+			rpy.append(yaw)
+			list_rpy.append(rpy)
+			rpy_np = np.array(list_rpy)
+			rot_mat, _ = cv2.Rodrigues(rpy_np)
+
+			transform_matrix = np.array([[0, 0, 1],
+                                  [-1, 0, 0],
+                                  [0, 1, 0]])
+			
+			good_mat = np.dot(rot_mat, transform_matrix)
+
+			euler_good = tf_transformations.euler_from_matrix(good_mat)
+
+			euler_list = euler_good
+			roll = euler_list[0]
+			pitch = euler_list[1]
+			yaw = euler_list[2]
+			list_rpy = []
+			rpy = []
+
 			q_rot = quaternion_from_euler(roll,pitch,yaw)
 
 			r = R.from_euler('xyz', [roll, pitch, yaw], degrees=True)
