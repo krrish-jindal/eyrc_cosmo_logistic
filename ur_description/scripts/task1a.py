@@ -71,7 +71,7 @@ def calculate_rectangle_area(coordinates):
 
 		return area, width 
 
-def detect_aruco(image):
+def detect_aruco(image, depth):
 		'''
 		Description:    Function to perform aruco detection and return each detail of aruco detected 
 						such as marker ID, distance, angle, width, center point location, etc.
@@ -117,7 +117,6 @@ def detect_aruco(image):
 			y1= corners[i][0][0][1]
 			x2= corners[i][0][2][0]
 			y2= corners[i][0][2][1]
-			#common point
 			x3= corners[i][0][3][0]
 			y3= corners[i][0][3][1]  
 
@@ -135,7 +134,8 @@ def detect_aruco(image):
 				center_x, center_y = map(int, center_aruco)
 				distance_from_rgb = cv2.norm(current_tvec)
 				center_aruco_list.append((center_x,center_y))
-				distance_from_rgb_list.append(distance_from_rgb)
+				depth_data = depth[center_y, center_x]
+				distance_from_rgb_list.append(depth_data)
 
 				#  Angle cal
 				list_1 = current_rvec.tolist()
@@ -188,7 +188,7 @@ class aruco_tf(Node):
 
 		super().__init__('aruco_tf_publisher')                                          # registering node
 		self.cv_image = None  # Initialize cv_image as None
-
+		self.depth_image = None
 		############ Topic SUBSCRIPTIONS ############
 
 		self.color_cam_sub = self.create_subscription(Image, '/camera/color/image_raw', self.colorimagecb, 10)
@@ -213,7 +213,9 @@ class aruco_tf(Node):
 
 		Returns:
 		'''
+		br = CvBridge()
 
+		self.depth_image = br.imgmsg_to_cv2(data, data.encoding)
 		############ ADD YOUR CODE HERE ############
 
 		# INSTRUCTIONS & HELP : 
@@ -274,24 +276,26 @@ class aruco_tf(Node):
 		focalX = 931.1829833984375
 		focalY = 931.1829833984375
 		
-		center_list, distance_list, angle_list, width_list, ids,tvec = detect_aruco(self.cv_image)
+		center_list, distance_list, angle_list, width_list, ids,tvec = detect_aruco(self.cv_image, self.depth_image)
 		rpy = []
 		list_rpy = []
 		# Add your image processing code here
 		for i in range(len(ids)):
-	# Get the ArUco ID, distance, angle, and width for the current marker
-
 			aruco_id = ids[i]
-			distance = distance_list[i]-3
+			distance = distance_list[i]
 			angle_aruco = angle_list[i]
 			width_aruco = width_list[i]
 			center=center_list[i]
-			# print(center_list[0][0])
-			# Correct the aruco angle using the correction formula
-			angle_aruco = ((0.788*angle_aruco[2]) - ((angle_aruco[2]**2)/3160)) % math.pi
+			print(angle_aruco)
+			angle_aruco = ((0.788*angle_aruco[2]) - ((angle_aruco[2]**2)/3160))
+			if round(angle_aruco) == 0:
+				angle_aruco = (angle_aruco) + math.pi
+				roll, pitch, yaw = 0.4, 0, angle_aruco
+			else:
+				roll, pitch, yaw = 0, -0.261, angle_aruco
 
+			print(angle_aruco)
 
-			roll, pitch, yaw = 0, 0, angle_aruco
 			rpy.append(roll)
 			rpy.append(pitch)
 			rpy.append(yaw)
@@ -327,9 +331,9 @@ class aruco_tf(Node):
 			x = tvec[i][0][0]
 			y = tvec[i][0][1]
 			z = tvec[i][0][2]
-			y_1 = distance/100 * (sizeCamX - center_list[i][0] - centerCamX) / focalX
-			z_1 = distance/100 * (sizeCamY - center_list[i][1] - centerCamY) / focalY
-			x_1 = distance/100
+			y_1 = distance/1000 * (sizeCamX - center_list[i][0] - centerCamX) / focalX
+			z_1 = distance/1000 * (sizeCamY - center_list[i][1] - centerCamY) / focalY
+			x_1 = distance/1000
 
 			transform_msg = TransformStamped()
 			transform_msg.header.stamp = self.get_clock().now().to_msg()
@@ -346,7 +350,6 @@ class aruco_tf(Node):
 
 			try:
 				t = self.tf_buffer.lookup_transform('base_link', transform_msg.child_frame_id, rclpy.time.Time())
-				# print(t)
 				transform_msg.header.stamp = self.get_clock().now().to_msg()
 
 				transform_msg.header.frame_id = 'base_link'
