@@ -132,9 +132,7 @@ def detect_aruco(image):
 				# center_aruco = current_tvec.squeeze()
 				center_aruco = np.mean(corners[i][0], axis=0)
 				center_x, center_y = map(int, center_aruco)
-	
 				distance_from_rgb = cv2.norm(current_tvec)
-
 				center_aruco_list.append((center_x,center_y))
 				distance_from_rgb_list.append(distance_from_rgb)
 
@@ -142,8 +140,6 @@ def detect_aruco(image):
 				list_1 = current_rvec.tolist()
 				flat_list.append(list_1)
 				angle_aruco_list = [item[0] for item in flat_list]
-				# print(math.degrees(angle_aruco_list[i][2]))
-				# print((angle_aruco_list[i][2]))
 				rotation_mat, _ = cv2.Rodrigues(current_rvec)
 				print(current_rvec[0])
 				print("!!!!!!!!!!!!!!")
@@ -155,10 +151,10 @@ def detect_aruco(image):
 				# cv2.putText(image, f"center{center_x, center_y}", (int(center_x), int(center_y)), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 0, 255), 2)
 				cv2.putText(image, f"ID: {aruco_id[i]}", (int(corners[i][0][0][0]), int(corners[i][0][0][1]) - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 0, 255), 2)
 				# cv2.putText(image, f"{angle_aruco_list[i]}", (int(center_x), int(center_y)), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 0, 255), 2)
-				cv2.drawFrameAxes(image,dist_mat, cam_mat, current_rvec[0] , current_tvec[0],2,1)	
+				cv2.drawFrameAxes(image,cam_mat, dist_mat, current_rvec[0] , current_tvec[0],2,1)	
 				cv2.circle(image, (center_x ,center_y), 2, (255, 0, 0), 6)
-		cv2.imshow("Aruco Detection", image)
-		cv2.waitKey(1)  # Wait for 1ms
+		# cv2.imshow("Aruco Detection", image)
+		# cv2.waitKey(1)  # Wait for 1ms
 	
 		############ ADD YOUR CODE HERE ############
 
@@ -246,9 +242,6 @@ class aruco_tf(Node):
 
 		self.cv_image = br.imgmsg_to_cv2(data, "bgr8")
 		self.gray = cv2.cvtColor(self.cv_image, cv2.COLOR_BGR2GRAY)
-		# self.process_image()
-
-		# result= detect_aruco(self.image)
 		############ ADD YOUR CODE HERE ############
 
 		# INSTRUCTIONS & HELP : 
@@ -296,34 +289,19 @@ class aruco_tf(Node):
 			center=center_list[i]
 			# print(center_list[0][0])
 			# Correct the aruco angle using the correction formula
-			angle_aruco = (0.788 * angle_aruco[2]) - ((angle_aruco[2] ** 2) / 3160)
+			angle_aruco = ((1 * angle_aruco[2]) - ((angle_aruco[2] ** 2) / 3160)) % (math.pi + 0.6)
 
-			roll, pitch, yaw = 0, 0, angle_aruco
+			roll, pitch, yaw = 1.5, -0.15, angle_aruco - 2
 			q_rot = quaternion_from_euler(roll,pitch,yaw)
 
 			r = R.from_euler('xyz', [roll, pitch, yaw], degrees=True)
 			quaternion = r.as_quat()
-			# print("raw---",q_rot)
-		
-			# Calculate the transform matrix (rotation and translation)
-			# transform_matrix = np.eye(4)
-			# transform_matrix[:3, :3] = r.as_matrix()
-			# transform_matrix[:3, 3] = [tvec[i][0][0], tvec[i][0][1], tvec[i][0][2]]
-# 
-
-			# Calculate quaternions from roll, pitch, and yaw (where roll and pitch are 0)
-			# You can use the scipy library for this purpose
-			# roll, pitch, yaw = 0, 0, angle_aruco  #pitch=y(green),roll=x(red),yaw=z(blue) 
 
 			qy = q_rot[1]
 			qz = q_rot[2]
 			qx = q_rot[0]
 			qw = q_rot[3]
 
-			# qx = np.sin(roll/2) * np.cos(pitch/2) * np.cos(yaw/2) - np.cos(roll/2) * np.sin(pitch/2) * np.sin(yaw/2)
-			# qy = np.cos(roll/2) * np.sin(pitch/2) * np.cos(yaw/2) + np.sin(roll/2) * np.cos(pitch/2) * np.sin(yaw/2)
-			# qw = np.cos(roll/2) * np.cos(pitch/2) * np.sin(yaw/2) - np.sin(roll/2) * np.sin(pitch/2) * np.cos(yaw/2)
-			# qz = np.cos(roll/2) * np.cos(pitch/2) * np.cos(yaw/2) + np.sin(roll/2) * np.sin(pitch/2) * np.sin(yaw/2)
 			x = tvec[i][0][0]
 			y = tvec[i][0][1]
 			z = tvec[i][0][2]
@@ -331,16 +309,8 @@ class aruco_tf(Node):
 			z_1 = distance/100 * (sizeCamY - center_list[i][1] - centerCamY) / focalY
 			x_1 = distance/100
 
-			print("!!!")
-			# print("main---",qx,qy,qz,qw)
-
-
-			print("@@@@@@@@@@@@@@@@@@")
 			transform_msg = TransformStamped()
-			# transform_msg.header.stamp = 
-			# transform_msg.header.stamp = rclpy.node.get_clock().now().to_msg()
 			transform_msg.header.stamp = self.get_clock().now().to_msg()
-
 			transform_msg.header.frame_id = 'camera_link'
 			transform_msg.child_frame_id = f'cam_{aruco_id}'
 			transform_msg.transform.translation.x = x_1
@@ -352,56 +322,23 @@ class aruco_tf(Node):
 			transform_msg.transform.rotation.w = qw
 			self.br.sendTransform(transform_msg)
 
-			# 	transform = node.tf_buffer.lookup_transform('base_link', transform_msg.child_frame_id, rclpy.time.Time())
+			try:
+				t = self.tf_buffer.lookup_transform('base_link', transform_msg.child_frame_id, rclpy.time.Time())
+				# print(t)
+				transform_msg.header.stamp = self.get_clock().now().to_msg()
 
-
-			# Calculate the transform matrix (rotation and translation)
-			# transform_matrix = np.eye(4)
-			# transform_matrix[:3, :3] = r.as_matrix()
-			# transform_matrix[:3, 3] = [tvec[i][0][0], tvec[i][0][1], tvec[i][0][2]]
-
-			# # Create a TransformStamped message to publish the transform
-			# transform_msg = TransformStamped()
-			# transform_msg.header.stamp = node.get_clock().now().to_msg()
-			# transform_msg.header.frame_id = 'camera_link'
-			# transform_msg.child_frame_id = f'cam_{aruco_id}'
-			# transform_msg.transform.translation.x = tvec[i][0][0] / 1000.0  # Convert mm to m
-			# transform_msg.transform.translation.y = tvec[i][0][1] / 1000.0  # Convert mm to m
-			# transform_msg.transform.translation.z = tvec[i][0][2] / 1000.0  # Convert mm to m
-			# transform_msg.transform.rotation.x = quaternion[0]
-			# transform_msg.transform.rotation.y = quaternion[1]
-			# transform_msg.transform.rotation.z = quaternion[2]
-			# transform_msg.transform.rotation.w = quaternion[3]
-
-			# # Publish the transform
-			# node.br.sendTransform(transform_msg)
-
-			# # Lookup the transform between base_link and obj frame
-			# try:
-			# 	transform = node.tf_buffer.lookup_transform('base_link', transform_msg.child_frame_id, rclpy.time.Time())
-
-			# 	# Publish the transform between object frame and base_link
-			# 	obj_transform_msg = TransformStamped()
-			# 	obj_transform_msg.header.stamp = node.get_clock().now().to_msg()
-			# 	obj_transform_msg.header.frame_id = 'base_link'
-			# 	obj_transform_msg.child_frame_id = f'obj_{aruco_id}'
-			# 	obj_transform_msg.transform = transform.transform
-			# 	node.br.sendTransform(obj_transform_msg)
-
-			# except (tf2_ros.LookupException, tf2_ros.ConnectivityException, tf2_ros.ExtrapolationException):
-			# 	node.get_logger().error(f"Transform lookup failed for {transform_msg.child_frame_id}")
-
-# Sh		ow the image with detected markers and center points
-
-			
-		
-		
-		# else:
-			# print("No image received. Skipping image processing.")
-		# print(center_list)
-
-			
-
+				transform_msg.header.frame_id = 'base_link'
+				transform_msg.child_frame_id = f'obj_{aruco_id}'
+				transform_msg.transform.translation.x = t.transform.translation.x
+				transform_msg.transform.translation.y = t.transform.translation.y
+				transform_msg.transform.translation.z = t.transform.translation.z
+				transform_msg.transform.rotation.x = t.transform.rotation.x
+				transform_msg.transform.rotation.y = t.transform.rotation.y
+				transform_msg.transform.rotation.z = t.transform.rotation.z
+				transform_msg.transform.rotation.w = t.transform.rotation.w
+				self.br.sendTransform(transform_msg)
+			except:
+				pass
 
 
 		############ ADD YOUR CODE HERE ############
