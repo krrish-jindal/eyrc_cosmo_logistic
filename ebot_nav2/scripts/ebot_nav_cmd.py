@@ -15,20 +15,30 @@ def main():
     goal_pose1.header.stamp = navigator.get_clock().now().to_msg()
     goal_pose1.pose.position.x = 1.8
     goal_pose1.pose.position.y = 1.5
-    goal_pose1.pose.orientation.w = 1.57
+    goal_pose1.pose.orientation.x = 0.0
+    goal_pose1.pose.orientation.y = 0.0
+    goal_pose1.pose.orientation.z = 0.7068252
+    goal_pose1.pose.orientation.w = 0.7073883
+
 
     goal_pose2 = PoseStamped()
     goal_pose2.header.frame_id = 'map'
     goal_pose2.pose.position.x = 2.0
     goal_pose2.pose.position.y = -7.0
-    goal_pose2.pose.orientation.w = -1.57
+    goal_pose1.pose.orientation.x = 0.0
+    goal_pose1.pose.orientation.y = 0.0
+    goal_pose1.pose.orientation.z = -0.7068252
+    goal_pose1.pose.orientation.w = 0.7073883
 
     goal_pose3 = PoseStamped()
     goal_pose3.header.frame_id = 'map'
     goal_pose3.header.stamp = navigator.get_clock().now().to_msg()
     goal_pose3.pose.position.x = -3.0
     goal_pose3.pose.position.y = 2.5
-    goal_pose3.pose.orientation.w = 1.57
+    goal_pose1.pose.orientation.x = 0.0
+    goal_pose1.pose.orientation.y = 0.0
+    goal_pose1.pose.orientation.z = 0.7068252
+    goal_pose1.pose.orientation.w = 0.7073883
 
     navigator.waitUntilNav2Active()
 
