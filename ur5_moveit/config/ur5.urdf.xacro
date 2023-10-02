@@ -1,0 +1,18 @@
+<?xml version="1.0"?>
+<robot xmlns:xacro="http://www.ros.org/wiki/xacro" name="ur5">
+
+    <!-- adding gazebo plugin with ros controller -->
+    <gazebo>
+        <plugin name="gazebo_ros2_control" filename="libgazebo_ros2_control.so">
+            <parameters>$(find ur5_moveit)/config/ros_controllers.yaml</parameters>
+        </plugin>
+    </gazebo>
+    
+    <!-- Import ur5 urdf file -->
+    <xacro:include filename="$(find ur_description)/urdf/ur5_arm.urdf.xacro" />
+    <xacro:include filename="ur5.ros2_control.xacro" />
+
+    <xacro:ur5_ros2_control name="FakeSystem" initial_positions_file="$(find ur5_moveit)/config/initial_positions.yaml"/>
+    
+
+</robot>
