@@ -43,11 +43,6 @@ from geometry_msgs.msg import TransformStamped
 from scipy.spatial.transform import Rotation as R
 from sensor_msgs.msg import CompressedImage, Image
 from cv2 import aruco
-from builtin_interfaces.msg import Time
-from geometry_msgs.msg import Quaternion
-from tf_transformations import quaternion_from_euler
-import tf_transformations
-
 
 ##################### FUNCTION DEFINITIONS #######################
 def calculate_rectangle_area(coordinates):
@@ -71,7 +66,7 @@ def calculate_rectangle_area(coordinates):
 
 		return area, width 
 
-def detect_aruco(image, depth):
+def detect_aruco(image):
 		'''
 		Description:    Function to perform aruco detection and return each detail of aruco detected 
 						such as marker ID, distance, angle, width, center point location, etc.
@@ -92,13 +87,13 @@ def detect_aruco(image, depth):
 		angle_aruco_list = []
 		width_aruco_list = []
 		ids = []
-		flat_list =[]
+
 		aruco_area_threshold = 1500
 
 		# The camera matrix is defined as per camera info loaded from the plugin used. 
 		# You may get this from /camer_info topic when camera is spawned in gazebo.
 		# Make sure you verify this matrix once if there are calibration issues.
-		cam_mat = np.array([[931.1829833984375, 0.0, 640.0], [0.0, 931.1829833984375, 360.0], [0.0, 0.0, 1.0]],dtype=np.float32)
+		cam_mat = np.array([[931.1829833984375, 0.0, 640.0], [0.0, 931.1829833984375, 360.0], [0.0, 0.0, 1.0]])
 
 		# The distortion matrix is currently set to 0. 
 		# We will be using it during Stage 2 hardware as Intel Realsense Camera provides these camera info.
@@ -110,13 +105,14 @@ def detect_aruco(image, depth):
 
 		arucoDict = cv2.aruco.Dictionary_get(cv2.aruco.DICT_4X4_50)
 		arucoParams = cv2.aruco.DetectorParameters_create()
-		(corners, aruco_id, rejected) = cv2.aruco.detectMarkers(image, arucoDict, parameters=arucoParams)
-		for i in range(len(aruco_id)):
-
+		(corners, id, rejected) = cv2.aruco.detectMarkers(image, arucoDict, parameters=arucoParams)
+		
+		for i in range(len(id)):
 			x1= corners[i][0][0][0]
 			y1= corners[i][0][0][1]
 			x2= corners[i][0][2][0]
 			y2= corners[i][0][2][1]
+			#common point
 			x3= corners[i][0][3][0]
 			y3= corners[i][0][3][1]  
 
@@ -125,34 +121,36 @@ def detect_aruco(image, depth):
 
 			if area >= aruco_area_threshold:
 				rvec , tvec, _ = cv2.aruco.estimatePoseSingleMarkers(corners, size_of_aruco_cm, cam_mat, dist_mat)
-				ids.append(int(aruco_id[i]))
+				ids.append(i)
+
 				current_rvec = rvec[i]
 				current_tvec = tvec[i]
 				
 				# center_aruco = current_tvec.squeeze()
 				center_aruco = np.mean(corners[i][0], axis=0)
 				center_x, center_y = map(int, center_aruco)
+	
 				distance_from_rgb = cv2.norm(current_tvec)
-				center_aruco_list.append((center_x,center_y))
-				depth_data = depth[center_y, center_x]
-				distance_from_rgb_list.append(depth_data)
-
-				#  Angle cal
-				list_1 = current_rvec.tolist()
-				flat_list.append(list_1)
-				angle_aruco_list = [item[0] for item in flat_list]
-				rotation_mat, _ = cv2.Rodrigues(current_rvec)
-				
+	
+				# Calculate the angle of the ArUco marker based on the rotation vector (rvec)
+				# You may need to convert the rotation vector to Euler angles or other representations depending on your needs
+				# Here's an example assuming rvec contains Euler angles:
+	
+				# Append the values to their respective lists
+				angle_aruco = current_rvec.squeeze()
+	
+				center_aruco_list.append(center_aruco)
+				distance_from_rgb_list.append(distance_from_rgb)
+				angle_aruco_list.append(angle_aruco)
 				width_aruco_list.append(width)
 				cv2.aruco.drawDetectedMarkers(image, corners)
 				# cv2.putText(image, f"Distance: {distance_from_rgb_list[i]:.2f} cm", (int(corners[i][0][0][0]), int(corners[i][0][0][1]) + 20), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 0), 2)
-				# cv2.putText(image, f"center{center_x, center_y}", (int(center_x), int(center_y)), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 0, 255), 2)
-				cv2.putText(image, f"ID: {aruco_id[i]}", (int(corners[i][0][0][0]), int(corners[i][0][0][1]) - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 0, 255), 2)
-				# cv2.putText(image, f"{angle_aruco_list[i]}", (int(center_x), int(center_y)), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 0, 255), 2)
-				cv2.drawFrameAxes(image,cam_mat, dist_mat, current_rvec[0] , current_tvec[0],2,1)	
+				cv2.putText(image, f"center{center_x, center_y}", (int(center_x), int(center_y)), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 0, 255), 2)
+				cv2.putText(image, f"ID: {id[i]}", (int(corners[i][0][0][0]), int(corners[i][0][0][1]) - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 0, 255), 2)
 				cv2.circle(image, (center_x ,center_y), 2, (255, 0, 0), 6)
-		# cv2.imshow("Aruco Detection", image)
-		# cv2.waitKey(1)  # Wait for 1ms
+		cv2.imshow("Aruco Detection", image)
+		cv2.waitKey(1)  # Wait for 1ms
+
 	
 		############ ADD YOUR CODE HERE ############
 
@@ -166,7 +164,8 @@ def detect_aruco(image, depth):
 
 		############################################	
 		# cv2.destroyAllWindows()
-		return center_aruco_list, distance_from_rgb_list, angle_aruco_list, width_aruco_list, ids, tvec
+		print(width_aruco_list)
+		return center_aruco_list, distance_from_rgb_list, angle_aruco_list, width_aruco_list, ids
 
 
 ##################### CLASS DEFINITION #######################
@@ -187,8 +186,7 @@ class aruco_tf(Node):
 		'''
 
 		super().__init__('aruco_tf_publisher')                                          # registering node
-		self.cv_image = None  # Initialize cv_image as None
-		self.depth_image = None
+
 		############ Topic SUBSCRIPTIONS ############
 
 		self.color_cam_sub = self.create_subscription(Image, '/camera/color/image_raw', self.colorimagecb, 10)
@@ -196,12 +194,15 @@ class aruco_tf(Node):
 
 		############ Constructor VARIABLES/OBJECTS ############
 
-		image_processing_rate = 2.5                                                   # rate of time to process image (seconds)
+		image_processing_rate = 0.2                                                     # rate of time to process image (seconds)
 		self.bridge = CvBridge()                                                        # initialise CvBridge object for image conversion
 		self.tf_buffer = tf2_ros.buffer.Buffer()                                        # buffer time used for listening transforms
 		self.listener = tf2_ros.TransformListener(self.tf_buffer, self)
-		self.br = tf2_ros.TransformBroadcaster(self)   		                                 # object as transform broadcaster to send transform wrt some frame_id
+		self.br = tf2_ros.TransformBroadcaster(self)                                    # object as transform broadcaster to send transform wrt some frame_id
 		self.timer = self.create_timer(image_processing_rate, self.process_image)       # creating a timer based function which gets called on every 0.2 seconds (as defined by 'image_processing_rate' variable)
+		
+		self.cv_image = None                                                            # colour raw image variable (from colorimagecb())
+		self.depth_image = None                                                         # depth image variable (from depthimagecb())
 
 	def depthimagecb(self, data):
 		'''
@@ -213,9 +214,7 @@ class aruco_tf(Node):
 
 		Returns:
 		'''
-		br = CvBridge()
 
-		self.depth_image = br.imgmsg_to_cv2(data, data.encoding)
 		############ ADD YOUR CODE HERE ############
 
 		# INSTRUCTIONS & HELP : 
@@ -240,8 +239,11 @@ class aruco_tf(Node):
 		'''
 		br = CvBridge()
 
-		self.cv_image = br.imgmsg_to_cv2(data, "bgr8")
-		self.gray = cv2.cvtColor(self.cv_image, cv2.COLOR_BGR2GRAY)
+		self.image = br.imgmsg_to_cv2(data, "bgr8")
+		self.gray = cv2.cvtColor(self.image, cv2.COLOR_BGR2GRAY)
+		# self.process_image()
+
+		result= detect_aruco(self.image)
 		############ ADD YOUR CODE HERE ############
 
 		# INSTRUCTIONS & HELP : 
@@ -275,95 +277,9 @@ class aruco_tf(Node):
 		centerCamY = 360
 		focalX = 931.1829833984375
 		focalY = 931.1829833984375
-		
-		center_list, distance_list, angle_list, width_list, ids,tvec = detect_aruco(self.cv_image, self.depth_image)
-		rpy = []
-		list_rpy = []
-		# Add your image processing code here
-		for i in range(len(ids)):
-			aruco_id = ids[i]
-			distance = distance_list[i]
-			angle_aruco = angle_list[i]
-			width_aruco = width_list[i]
-			center=center_list[i]
-			print(angle_aruco)
-			angle_aruco = ((0.788*angle_aruco[2]) - ((angle_aruco[2]**2)/3160))
-			if round(angle_aruco) == 0:
-				angle_aruco = (angle_aruco) + math.pi
-				roll, pitch, yaw = 0.4, 0, angle_aruco
-			else:
-				roll, pitch, yaw = 0, -0.261, angle_aruco
+		center_list, distance_list, angle_list, width_list, ids = detect_aruco(self.image)
 
-			print(angle_aruco)
-
-			rpy.append(roll)
-			rpy.append(pitch)
-			rpy.append(yaw)
-			list_rpy.append(rpy)
-			rpy_np = np.array(list_rpy)
-			rot_mat, _ = cv2.Rodrigues(rpy_np)
-
-			transform_matrix = np.array([[0, 0, 1],
-                                  [-1, 0, 0],
-                                  [0, 1, 0]])
-			
-			good_mat = np.dot(rot_mat, transform_matrix)
-
-			euler_good = tf_transformations.euler_from_matrix(good_mat)
-
-			euler_list = euler_good
-			roll = euler_list[0]
-			pitch = euler_list[1]
-			yaw = euler_list[2]
-			list_rpy = []
-			rpy = []
-
-			q_rot = quaternion_from_euler(roll,pitch,yaw)
-
-			r = R.from_euler('xyz', [roll, pitch, yaw], degrees=True)
-			quaternion = r.as_quat()
-
-			qy = q_rot[1]
-			qz = q_rot[2]
-			qx = q_rot[0]
-			qw = q_rot[3]
-
-			x = tvec[i][0][0]
-			y = tvec[i][0][1]
-			z = tvec[i][0][2]
-			y_1 = distance/1000 * (sizeCamX - center_list[i][0] - centerCamX) / focalX
-			z_1 = distance/1000 * (sizeCamY - center_list[i][1] - centerCamY) / focalY
-			x_1 = distance/1000
-
-			transform_msg = TransformStamped()
-			transform_msg.header.stamp = self.get_clock().now().to_msg()
-			transform_msg.header.frame_id = 'camera_link'
-			transform_msg.child_frame_id = f'cam_{aruco_id}'
-			transform_msg.transform.translation.x = x_1
-			transform_msg.transform.translation.y = y_1
-			transform_msg.transform.translation.z = z_1
-			transform_msg.transform.rotation.x = qx
-			transform_msg.transform.rotation.y = qy
-			transform_msg.transform.rotation.z = qz
-			transform_msg.transform.rotation.w = qw
-			self.br.sendTransform(transform_msg)
-
-			try:
-				t = self.tf_buffer.lookup_transform('base_link', transform_msg.child_frame_id, rclpy.time.Time())
-				transform_msg.header.stamp = self.get_clock().now().to_msg()
-
-				transform_msg.header.frame_id = 'base_link'
-				transform_msg.child_frame_id = f'obj_{aruco_id}'
-				transform_msg.transform.translation.x = t.transform.translation.x
-				transform_msg.transform.translation.y = t.transform.translation.y
-				transform_msg.transform.translation.z = t.transform.translation.z
-				transform_msg.transform.rotation.x = t.transform.rotation.x
-				transform_msg.transform.rotation.y = t.transform.rotation.y
-				transform_msg.transform.rotation.z = t.transform.rotation.z
-				transform_msg.transform.rotation.w = t.transform.rotation.w
-				self.br.sendTransform(transform_msg)
-			except:
-				pass
+		# for i in range(len(aruco_ids)):
 
 
 		############ ADD YOUR CODE HERE ############
