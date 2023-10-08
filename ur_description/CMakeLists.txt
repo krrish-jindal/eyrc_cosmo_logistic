@@ -23,9 +23,6 @@ install(PROGRAMS
   scripts/task1a.py
   DESTINATION lib/${PROJECT_NAME}
 )
-install(PROGRAMS
-  scripts/task1b.py
-  DESTINATION lib/${PROJECT_NAME}
-)
+
 
 ament_package()

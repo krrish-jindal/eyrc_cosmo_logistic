@@ -53,9 +53,18 @@ def main():
     node.get_logger().info(
         f"Moving to {{position: {list(position)}, quat_xyzw: {list(quat_xyzw)}}}"
     )
-    moveit2.move_to_pose(position=position, quat_xyzw=quat_xyzw, cartesian=cartesian)
-    moveit2.wait_until_executed()
-
+    switch = True
+    while switch == True:
+        try:
+            moveit2.move_to_pose(position=[0.30, 0.1, 0.68], quat_xyzw=[0.0, 0.0, 0.0, 0.0], cartesian=False,tolerance_position = 0.1,tolerance_orientation=0.1)
+            moveit2.wait_until_executed()
+            switch = False
+        except :
+            pass
+    # moveit2.move_to_pose(position=[0.194, -0.43, 0.701], quat_xyzw=[0.0, 0.0, 0.0, 0.0], cartesian=False)
+    # moveit2.wait_until_executed()
+    # moveit2.move_to_pose(position=[-0.37, 0.12, 0.397], quat_xyzw=[0.0, 0.0, 0.0, 0.0], cartesian=False)
+    # moveit2.wait_until_executed() 
     rclpy.shutdown()
     exit(0)
 
