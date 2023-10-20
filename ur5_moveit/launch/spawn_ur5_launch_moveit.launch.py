@@ -58,6 +58,8 @@ def generate_launch_description():
     robot_description_semantic = load_file(srdf_file)
     kinematics_config = load_yaml(kinematics_file)
     ompl_config = load_yaml(ompl_config_file)
+    rviz_config_file = get_package_file(moveit_config_folder_name, 'config/moveit.rviz')
+
 
     moveit_controllers = {
         'moveit_simple_controller_manager' : load_yaml(moveit_controllers_file),
@@ -136,7 +138,9 @@ def generate_launch_description():
                 'robot_description_semantic': robot_description_semantic,
                 'robot_description_kinematics': kinematics_config,
             }
-        ],
+        ],		
+        arguments=['-d', rviz_config_file],
+
     )
     # Controller manager for realtime interactions
     ros2_control_node = Node(

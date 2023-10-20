@@ -21,7 +21,7 @@ from tf_transformations import quaternion_from_euler
 import tf_transformations
 from geometry_msgs.msg import TwistStamped
 RACK_MESH = path.join(
-    path.dirname(path.realpath(__file__)), "assets", "rack.stl"
+    path.dirname(path.realpath(__file__)), "assets", "rack1.stl"
 )
 BOX_MESH = path.join(
     path.dirname(path.realpath(__file__)), "assets", "box.stl"
@@ -81,17 +81,17 @@ def main():
 
     filepath1 = RACK_MESH
     filepath2 = BOX_MESH
-    position_r1 = [0.55,0.05,-0.21]
+    position_r1 = [0.52,0.05,0.17]
     quat_xyzw_r1 = [0.00,0.00,0.00,0.00]
-    position_r2 = [0.25,-0.64,-0.21]
+    position_r2 = [0.25,-0.62,0.17]
     quat_xyzw_r2 = [0, 0, 0.7068252, 0.7073883]
-    position_r3 = [0.25,0.74,-0.21]
+    position_r3 = [0.25,0.74,0.17]
     quat_xyzw_r3 = [0, 0, -0.7068252, 0.7073883]
-    position_b1 = [0.25,-0.57,0.17]
+    position_b1 = [0.25,-0.52,0.18]
     quat_xyzw_b1 = [0, 0, 0.7068252, 0.7073883]
-    position_b2 = [0.25,-0.57,0.53]
+    position_b2 = [0.25,-0.52,0.55]
     quat_xyzw_b2 = [-0.0000221, 0.001126, 0.6931103, 0.7208306]
-    position_b3 = [0.52,0.06,0.53]
+    position_b3 = [0.45,0.06,0.55]
     quat_xyzw_b3 = [0, 0, 0.9999997, 0.0007963 ]
     rack_pos = [position_r1,position_r2,position_r3]
     rack_quat = [quat_xyzw_r1,quat_xyzw_r2,quat_xyzw_r3]
@@ -118,7 +118,7 @@ def main():
         moveit2.add_collision_mesh(
             filepath=filepath1, id=mesh_rack_id[i], position=rack_pos[i], quat_xyzw=rack_quat[i], frame_id=ur5.base_link_name()
         )
-        print("mesh added")
+        print(filepath1)
         moveit2.add_collision_mesh(
             filepath=filepath2, id=mesh_box_id[i], position=box_pos[i], quat_xyzw=box_quat[i], frame_id=ur5.base_link_name()
         )
@@ -126,7 +126,6 @@ def main():
     while True:
         twist_msg.header.stamp = enftf.get_clock().now().to_msg()
         enftf.start()
-        print(type(mesh_id1))
         #print(truncate(enftf.endf_z,2))
         twist_pub.publish(twist_msg)
         if float(pos1[2]) > float(round(endf_z,2)) :
