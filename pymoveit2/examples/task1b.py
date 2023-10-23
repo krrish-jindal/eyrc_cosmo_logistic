@@ -126,10 +126,10 @@ def main():
     while True:
         twist_msg.header.stamp = enftf.get_clock().now().to_msg()
         enftf.start()
-        #print(truncate(enftf.endf_z,2))
         twist_pub.publish(twist_msg)
         if float(pos1[2]) > float(round(endf_z,2)) :
-            twist_msg.twist.linear.x = 0.1
+            # print(truncate(enftf.endf_z,2))
+            twist_msg.twist.linear.x = 0.5
             twist_msg.twist.linear.z = 0.0
     
     rclpy.shutdown()
