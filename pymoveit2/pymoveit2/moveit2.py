@@ -32,7 +32,7 @@ from rclpy.qos import (
 from sensor_msgs.msg import JointState
 from shape_msgs.msg import Mesh, MeshTriangle, SolidPrimitive
 from trajectory_msgs.msg import JointTrajectory, JointTrajectoryPoint
-
+import time
 
 class MoveIt2:
     """
@@ -191,7 +191,7 @@ class MoveIt2:
         )
 
         self.__collision_object_publisher = self._node.create_publisher(
-            AttachedCollisionObject, "/attached_collision_object", 10
+            AttachedCollisionObject, "/attached_collision_object", 1
         )
 
         self.__joint_state_mutex = threading.Lock()
@@ -834,6 +834,7 @@ class MoveIt2:
         operation: int = CollisionObject.ADD,
         frame_id: Optional[str] = None,
     ):
+        
         """
         Add collision object with a mesh geometry specified by `filepath`.
         Note: This function required 'trimesh' Python module to be installed.
@@ -847,7 +848,13 @@ class MoveIt2:
                 "to add collision objects into the MoveIt 2 planning scene."
             ) from err
 
-        mesh = trimesh.load(filepath)
+        mesh = None
+        # mesh = trimesh.load(filepath)
+        while mesh is None:
+            mesh = trimesh.load(filepath)
+            if mesh is None:
+                print("Mesh not loaded yet. Retrying...")
+                time.sleep(1)
         msg = AttachedCollisionObject()#CollisionObject()
         msg.link_name = frame_id
 
