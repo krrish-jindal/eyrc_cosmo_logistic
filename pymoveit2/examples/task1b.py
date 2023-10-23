@@ -6,7 +6,7 @@ from threading import Thread
 import rclpy
 from rclpy.callback_groups import ReentrantCallbackGroup
 from rclpy.node import Node
-
+import time
 from pymoveit2 import MoveIt2
 from pymoveit2.robots import ur5
 import math
@@ -20,6 +20,8 @@ from geometry_msgs.msg import Quaternion
 from tf_transformations import quaternion_from_euler
 import tf_transformations
 from geometry_msgs.msg import TwistStamped
+from linkattacher_msgs.srv import AttachLink
+
 RACK_MESH = path.join(
     path.dirname(path.realpath(__file__)), "assets", "rack1.stl"
 )
@@ -59,6 +61,7 @@ def main():
     rclpy.init()
     enftf = endf()
     twist_pub = enftf.create_publisher(TwistStamped, "/servo_node/delta_twist_cmds", 10)
+    gripper_control = enftf.create_client(AttachLink, '/GripperMagnetON')
     twist_msg = TwistStamped()
     #twist_msg.header.frame_id = "auto"
     
@@ -87,16 +90,16 @@ def main():
     quat_xyzw_r2 = [0, 0, 0.7068252, 0.7073883]
     position_r3 = [0.25,0.74,0.17]
     quat_xyzw_r3 = [0, 0, -0.7068252, 0.7073883]
-    position_b1 = [0.25,-0.52,0.18]
-    quat_xyzw_b1 = [0, 0, 0.7068252, 0.7073883]
-    position_b2 = [0.25,-0.52,0.55]
-    quat_xyzw_b2 = [-0.0000221, 0.001126, 0.6931103, 0.7208306]
-    position_b3 = [0.45,0.06,0.55]
-    quat_xyzw_b3 = [0, 0, 0.9999997, 0.0007963 ]
+    # position_b1 = [0.25,-0.57,0.18]
+    # quat_xyzw_b1 = [0, 0, 0.7068252, 0.7073883]
+    # position_b2 = [0.25,-0.57,0.55]
+    # quat_xyzw_b2 = [-0.0000221, 0.001126, 0.6931103, 0.7208306]
+    # position_b3 = [0.45,0.06,0.55]
+    # quat_xyzw_b3 = [0, 0, 0.9999997, 0.0007963]
     rack_pos = [position_r1,position_r2,position_r3]
     rack_quat = [quat_xyzw_r1,quat_xyzw_r2,quat_xyzw_r3]
-    box_pos = [position_b1,position_b2,position_b3]
-    box_quat = [quat_xyzw_b1,quat_xyzw_b2,quat_xyzw_b3]
+    # box_pos = [position_b1,position_b2,position_b3]
+    # box_quat = [quat_xyzw_b1,quat_xyzw_b2,quat_xyzw_b3]
     #check if exists
 
     # if not path.exists(filepath1):
@@ -113,19 +116,34 @@ def main():
     mesh_box_id = ["box_1","box_2","box_3"]
     mesh_rack_id = ["rack_1","rack_2","rack_3"]
     for i in range(len(position_r1)):
+            time.sleep(2)
             moveit2.add_collision_mesh(
                 filepath=filepath1, id=mesh_rack_id[i], position=rack_pos[i], quat_xyzw=rack_quat[i], frame_id=ur5.base_link_name()
             )
+            time.sleep(2)
             # print(filepath1)
-            moveit2.add_collision_mesh(
-                filepath=filepath2, id=mesh_box_id[i], position=box_pos[i], quat_xyzw=box_quat[i], frame_id=ur5.base_link_name()
-            )
+            # moveit2.add_collision_mesh(
+            #     filepath=filepath2, id=mesh_box_id[i], position=box_pos[i], quat_xyzw=box_quat[i], frame_id=ur5.base_link_name()
+            # )
+            # time.sleep(2)
     while rclpy.ok():
         try:
-            ok = enftf.tf_buffer.lookup_transform('base_link', "obj_49", rclpy.time.Time())
-    #print(t.transform.translation)
-            moveit2.move_to_pose(position=[ok.transform.translation.x, ok.transform.translation.y, ok.transform.translation.z], quat_xyzw=[ok.transform.rotation.x, ok.transform.rotation.y, ok.transform.rotation.z, ok.transform.rotation.w], cartesian=False,tolerance_position = 0.1,tolerance_orientation=0.1)
+            box1 = enftf.tf_buffer.lookup_transform('base_link', "obj_1", rclpy.time.Time())
+            moveit2.move_to_pose(position=[box1.transform.translation.x, box1.transform.translation.y, box1.transform.translation.z], quat_xyzw=[box1.transform.rotation.x, box1.transform.rotation.y, box1.transform.rotation.z, box1.transform.rotation.w], cartesian=False,tolerance_position = 0.03,tolerance_orientation=0.1)
             moveit2.wait_until_executed()
+            while not gripper_control.wait_for_service(timeout_sec=1.0):
+                enftf.get_logger().info('EEF service not available, waiting again...')
+            print("tryiing to attach")
+            req = AttachLink.Request()
+            req.model1_name =  'box1'      
+            req.link1_name  = 'link'       
+            req.model2_name =  'ur5'       
+            req.link2_name  = 'wrist_3_link'  
+
+            gripper_control.call_async(req)
+            moveit2.move_to_pose(position=[-0.37, 0.12, 0.397], quat_xyzw=[box1.transform.rotation.x, box1.transform.rotation.y, box1.transform.rotation.z, box1.transform.rotation.w], cartesian=False,tolerance_position = 0.01,tolerance_orientation=0.1)
+            moveit2.wait_until_executed()
+
             break
             print(ok)
 
