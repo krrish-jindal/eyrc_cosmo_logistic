@@ -38,6 +38,7 @@ def generate_launch_description():
     bringup_dir = get_package_share_directory('nav2_bringup')
     launch_dir = os.path.join(bringup_dir, 'launch')
     ebot_nav2_dir = get_package_share_directory('ebot_nav2')
+    description_dir = get_package_share_directory('ebot_description')
 
     namespace = LaunchConfiguration('namespace')
     use_namespace = LaunchConfiguration('use_namespace')
@@ -84,7 +85,7 @@ def generate_launch_description():
 
     declare_map_yaml_cmd = DeclareLaunchArgument(
         'map',
-        default_value=os.path.join(ebot_nav2_dir, 'maps', 'map_name.yaml'),
+        default_value=os.path.join(ebot_nav2_dir, 'maps', 'map.yaml'),
         description='Full path to map yaml file to load')
 
     declare_use_sim_time_cmd = DeclareLaunchArgument(
@@ -147,6 +148,10 @@ def generate_launch_description():
        parameters=[os.path.join(ebot_nav2_dir, 'config/ekf.yaml'), {'use_sim_time': use_sim_time}]
 )
 
+    sim_launch = IncludeLaunchDescription(
+        PythonLaunchDescriptionSource(
+            os.path.join(description_dir, 'launch', 'ebot_gazebo_launch.py')))
+    
     bringup_cmd_group = GroupAction([
         PushRosNamespace(
             condition=IfCondition(use_namespace),
@@ -195,6 +200,8 @@ def generate_launch_description():
                               'container_name': 'nav2_container'}.items()),
     ])
 
+
+
     ld = LaunchDescription()
     ld.add_action(stdout_linebuf_envvar)
     ld.add_action(declare_namespace_cmd)
@@ -209,5 +216,9 @@ def generate_launch_description():
     ld.add_action(declare_log_level_cmd)
     ld.add_action(declare_rviz_config_file_cmd)
     ld.add_action(start_rviz_cmd)
+    ld.add_action(robot_localization_node)
+    ld.add_action(sim_launch)
+    ld.add_action(bringup_cmd_group)
+
 
     return ld

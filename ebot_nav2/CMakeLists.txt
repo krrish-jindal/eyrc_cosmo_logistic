@@ -55,5 +55,8 @@ install(
 install(PROGRAMS
   DESTINATION lib/${PROJECT_NAME}
 )
-
+install(PROGRAMS
+  scripts/ebot_nav_cmd.py
+  DESTINATION lib/${PROJECT_NAME}
+)
 ament_package()
