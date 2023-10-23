@@ -23,20 +23,14 @@ from rclpy.qos import (
 
 # Initialize message based on passed arguments
 
-__twist_msg = TwistStamped()
-__twist_msg.header.frame_id = ur5.base_link_name()
-__twist_msg.twist.linear.x = linear_speed
-__twist_msg.twist.linear.y = linear_speed
-__twist_msg.twist.linear.z = linear_speed
-__twist_msg.twist.angular.x = angular_speed
-__twist_msg.twist.angular.y = angular_speed
-__twist_msg.twist.angular.z = angular_speed
+
 
 def main():
     rclpy.init()
 
     # Create node for this example
     node = Node("ex_servo")
+    
 
     # Create callback group that allows execution of callbacks in parallel without restrictions
     callback_group = ReentrantCallbackGroup()
@@ -44,6 +38,17 @@ def main():
     
     def servo_circular_motion():
         """Move in a circular motion using Servo"""
+        __twist_msg = TwistStamped()
+        __twist_msg.header.stamp = node.get_clock().now().to_msg()
+        __twist_msg.header.frame_id = ur5.base_link_name()
+        __twist_msg.twist.linear.x = -1.0
+        __twist_msg.twist.linear.y = 0.0
+        __twist_msg.twist.linear.z = 0.0
+        __twist_msg.twist.angular.x = 0.0
+        __twist_msg.twist.angular.y = 0.0
+        __twist_msg.twist.angular.z = 0.0
+        print(__twist_msg)
+        __twist_pub.publish(__twist_msg)
 
     # Create timer for moving in a circular motion
     node.create_timer(0.02, servo_circular_motion)
