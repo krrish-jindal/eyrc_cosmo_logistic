@@ -61,6 +61,7 @@ class endf(Node):
         self.tf_buffer = tf2_ros.buffer.Buffer()                                        # buffer time used for listening transforms
         self.listener = tf2_ros.TransformListener(self.tf_buffer, self)
         self.br = tf2_ros.TransformBroadcaster(self)
+        self.switch = False
 
 def main():
     rclpy.init()
@@ -125,9 +126,11 @@ def main():
 
 
     for i in range(len(position_r1)):
+            time.sleep(2)
             moveit2.add_collision_mesh(
                 filepath=filepath1, id=mesh_rack_id[i], position=rack_pos[i], quat_xyzw=rack_quat[i], frame_id=ur5.base_link_name()
             )
+            time.sleep(2)
             # print(filepath1)
             # moveit2.add_collision_mesh(
             #     filepath=filepath2, id=mesh_box_id[i], position=box_pos[i], quat_xyzw=box_quat[i], frame_id=ur5.base_link_name()
@@ -175,19 +178,21 @@ def main():
                     print(round(tool0.transform.translation.x,2))
                 except:
                     pass
-                if (round(tool0.transform.translation.x,2) > 0.23):
+                if (round(tool0.transform.translation.x,2) > 0.21):
                     __twist_msg = TwistStamped()
                     __twist_msg.header.stamp = enftf.get_clock().now().to_msg()
                     __twist_msg.header.frame_id = ur5.base_link_name()
-                    __twist_msg.twist.linear.y = -0.2
+                    __twist_msg.twist.linear.z = 0.01
                     __twist_msg.twist.linear.x = -0.2
                     __twist_pub.publish(__twist_msg)
                 else:
                     break
-            while rclpy.ok():
-                moveit2.move_to_pose(position=[-0.37, 0.12, 0.397], quat_xyzw=[box1.transform.rotation.x, box1.transform.rotation.y, box1.transform.rotation.z, box1.transform.rotation.w], cartesian=False,tolerance_position = 0.01,tolerance_orientation=0.1)
-                moveit2.wait_until_executed()
+            
+            moveit2.move_to_pose(position=[-0.37, 0.12, 0.397], quat_xyzw=[0.0, 0.0, 0.75, 0.76], cartesian=False,tolerance_position = 0.3,tolerance_orientation=0.3)
+            moveit2.wait_until_executed()
+            enftf.switch == True
                 
+
             break
                 # else:
                 #     rclpy.shutdown()
