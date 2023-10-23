@@ -47,11 +47,11 @@ class endf(Node):
     
     def start(self):
         try:
-            t = self.tf_buffer.lookup_transform('base_link', "tool0", rclpy.time.Time())
+            t = self.tf_buffer.lookup_transform('base_link', "obj_49", rclpy.time.Time())
             #print(t.transform.translation)
-            self.endf_x = t.transform.translation.x
-            self.endf_y = t.transform.translation.y
-            self.endf_z = t.transform.translation.z
+            print(t.transform.translation.x)
+            print(t.transform.translation.y)
+            print(t.transform.translation.z)
         except:
             pass
 
@@ -112,26 +112,26 @@ def main():
     mesh_id2 = path.basename(filepath2).split(".")[0]
     mesh_box_id = ["box_1","box_2","box_3"]
     mesh_rack_id = ["rack_1","rack_2","rack_3"]
-    twist_msg.twist.linear.z = 0.1
-    twist_pub.publish(twist_msg)
     for i in range(len(position_r1)):
-        moveit2.add_collision_mesh(
-            filepath=filepath1, id=mesh_rack_id[i], position=rack_pos[i], quat_xyzw=rack_quat[i], frame_id=ur5.base_link_name()
-        )
-        print(filepath1)
-        moveit2.add_collision_mesh(
-            filepath=filepath2, id=mesh_box_id[i], position=box_pos[i], quat_xyzw=box_quat[i], frame_id=ur5.base_link_name()
-        )
+            moveit2.add_collision_mesh(
+                filepath=filepath1, id=mesh_rack_id[i], position=rack_pos[i], quat_xyzw=rack_quat[i], frame_id=ur5.base_link_name()
+            )
+            # print(filepath1)
+            moveit2.add_collision_mesh(
+                filepath=filepath2, id=mesh_box_id[i], position=box_pos[i], quat_xyzw=box_quat[i], frame_id=ur5.base_link_name()
+            )
+    while rclpy.ok():
+        try:
+            ok = enftf.tf_buffer.lookup_transform('base_link', "obj_49", rclpy.time.Time())
+    #print(t.transform.translation)
+            moveit2.move_to_pose(position=[ok.transform.translation.x, ok.transform.translation.y, ok.transform.translation.z], quat_xyzw=[ok.transform.rotation.x, ok.transform.rotation.y, ok.transform.rotation.z, ok.transform.rotation.w], cartesian=False,tolerance_position = 0.1,tolerance_orientation=0.1)
+            moveit2.wait_until_executed()
+            break
+            print(ok)
 
-    while True:
-        twist_msg.header.stamp = enftf.get_clock().now().to_msg()
-        enftf.start()
-        #print(truncate(enftf.endf_z,2))
-        twist_pub.publish(twist_msg)
-        if float(pos1[2]) > float(round(endf_z,2)) :
-            twist_msg.twist.linear.x = 0.1
-            twist_msg.twist.linear.z = 0.0
-    
+        except:
+            pass
+
     rclpy.shutdown()
     exit(0)
 
