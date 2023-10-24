@@ -63,28 +63,131 @@ class endf(Node):
 		self.listener = tf2_ros.TransformListener(self.tf_buffer, self)
 		self.br = tf2_ros.TransformBroadcaster(self)
 		self.switch = False
+		self.twist_pub = self.create_publisher(TwistStamped, "/servo_node/delta_twist_cmds", 10)
+		self.gripper_control = self.create_client(AttachLink, '/GripperMagnetON')
+		self.gripper_control_off = self.create_client(DetachLink, '/GripperMagnetOFF')
+		self.callback_group = ReentrantCallbackGroup()
+
+		self.moveit2 = MoveIt2(
+		node=self,
+		joint_names=ur5.joint_names(),
+		base_link_name=ur5.base_link_name(),
+		end_effector_name=ur5.end_effector_name(),
+		group_name=ur5.MOVE_GROUP_ARM,
+		callback_group=self.callback_group,
+	)
+	def servo(self, box_no):
+		while rclpy.ok():
+			try:
+				tool0 = self.tf_buffer.lookup_transform('base_link', "tool0", rclpy.time.Time())
+				box49 = self.tf_buffer.lookup_transform('base_link', f"obj_{box_no}", rclpy.time.Time())
+				
+
+
+				# while rclpy.ok():
+				# 	try:
+				# 		tool0 = enftf.tf_buffer.lookup_transform('base_link', "tool0", rclpy.time.Time())
+				# 		box49 = enftf.tf_buffer.lookup_transform('base_link', "obj_49", rclpy.time.Time())
+				# 	except:
+				# 		pass
+
+
+				# 	roll_box , pitch_box, yaw_box = tf_transformations.euler_from_quaternion([box49.transform.rotation.x, box49.transform.rotation.y, box49.transform.rotation.z, box49.transform.rotation.w])
+				# 	print(yaw_box)
+				# 	roll_tool , pitch_tool, yaw_tool = tf_transformations.euler_from_quaternion([tool0.transform.rotation.x, tool0.transform.rotation.y, tool0.transform.rotation.z, tool0.transform.rotation.w])
+
+				# 	print(f"y ={round((yaw_tool) - (yaw_box),4)}")
+
+				# 	if round((yaw_tool) - (yaw_box),4) < 0.003:
+				# 		__twist_msg = TwistStamped()
+				# 		__twist_msg.header.stamp = enftf.get_clock().now().to_msg()
+				# 		__twist_msg.header.frame_id = ur5.base_link_name()
+				# 		__twist_msg.twist.angular.z = round((yaw_tool) - (yaw_box),4) *2
+				# 		__twist_pub.publish(__twist_msg)
+				# 	else:
+				# 		break
+
+
+
+
+				while rclpy.ok():
+					try:
+						box49 = self.tf_buffer.lookup_transform('base_link', f"obj_{box_no}", rclpy.time.Time())
+						tool0 = self.tf_buffer.lookup_transform('base_link', "tool0", rclpy.time.Time())
+					except:
+						pass
+					print(f"y ={round((box49.transform.translation.y) - (tool0.transform.translation.y),4)}")
+					print(f"x ={round((box49.transform.translation.x) - (tool0.transform.translation.x),4)}")
+					print(f"z ={round((box49.transform.translation.z) - (tool0.transform.translation.z),4)}")
+					
+					if round((box49.transform.translation.y) - (tool0.transform.translation.y),4) > 0.003 or round((box49.transform.translation.x) - (tool0.transform.translation.x),4) > 0.003 or round((box49.transform.translation.z) - (tool0.transform.translation.z),4) > 0.003:
+						__twist_msg = TwistStamped()
+						__twist_msg.header.stamp = self.get_clock().now().to_msg()
+						__twist_msg.header.frame_id = ur5.base_link_name()
+						__twist_msg.twist.linear.y = round((box49.transform.translation.y) - (tool0.transform.translation.y),4) *2
+						__twist_msg.twist.linear.x = round((box49.transform.translation.x) - (tool0.transform.translation.x),4) *2
+						__twist_msg.twist.linear.z = round((box49.transform.translation.z) - (tool0.transform.translation.z),4) *2
+						self.twist_pub.publish(__twist_msg)
+					else :
+						while not self.gripper_control.wait_for_service(timeout_sec=1.0):
+							self.get_logger().info('EEF service not available, waiting again...')
+						print("tryiing to attach")
+						req = AttachLink.Request()
+						req.model1_name =  f'box{box_no}'      
+						req.link1_name  = 'link'       
+						req.model2_name =  'ur5'       
+						req.link2_name  = 'wrist_3_link'
+						self.gripper_control.call_async(req)
+						break
+				while rclpy.ok():
+					try:
+						box49 = self.tf_buffer.lookup_transform('base_link', f"obj_{box_no}", rclpy.time.Time())
+						tool0 = self.tf_buffer.lookup_transform('base_link', "tool0", rclpy.time.Time())
+						print(round(tool0.transform.translation.x,2))
+					except:
+						pass
+					if (round(tool0.transform.translation.x,2) > 0.21):
+						__twist_msg = TwistStamped()
+						__twist_msg.header.stamp = self.get_clock().now().to_msg()
+						__twist_msg.header.frame_id = ur5.base_link_name()
+						__twist_msg.twist.linear.z = 0.04
+						__twist_msg.twist.linear.x = -0.2
+						self.twist_pub.publish(__twist_msg)
+					else:
+						break
+				
+				self.moveit2.move_to_pose(position=[-0.8, 0.12, 0.5], quat_xyzw=[box49.transform.rotation.x, box49.transform.rotation.y, -box49.transform.rotation.z, -box49.transform.rotation.w], cartesian=False,tolerance_position = 0.4,tolerance_orientation=0.4)
+				self.switch == True
+				self.moveit2.wait_until_executed()
+				self.moveit2.move_to_pose(position=[-0.8, 0.12, 0.5], quat_xyzw=[box49.transform.rotation.x, box49.transform.rotation.y, -box49.transform.rotation.z, -box49.transform.rotation.w], cartesian=False,tolerance_position = 0.4,tolerance_orientation=0.4)
+				self.moveit2.wait_until_executed()
+				while not self.gripper_control.wait_for_service(timeout_sec=1.0):
+					self.enftf.get_logger().info('EEF service not available, waiting again...')
+				print("tryiing to attach")
+				req = DetachLink.Request()
+				req.model1_name =  f'box{box_no}'      
+				req.link1_name  = 'link'       
+				req.model2_name =  'ur5'       
+				req.link2_name  = 'wrist_3_link'
+				self.gripper_control_off.call_async(req)
+
+					
+				
+				rclpy.shutdown()
+				exit(0)
+			except:
+				pass
+
 
 def main():
 	rclpy.init()
 	enftf = endf()
-	twist_pub = enftf.create_publisher(TwistStamped, "/servo_node/delta_twist_cmds", 10)
-	gripper_control = enftf.create_client(AttachLink, '/GripperMagnetON')
-	gripper_control_off = enftf.create_client(DetachLink, '/GripperMagnetOFF')
+
 
 	twist_msg = TwistStamped()
 	#twist_msg.header.frame_id = "auto"
 	
 	#node = Node("move_ur5")
-	callback_group = ReentrantCallbackGroup()
-
-	moveit2 = MoveIt2(
-		node=enftf,
-		joint_names=ur5.joint_names(),
-		base_link_name=ur5.base_link_name(),
-		end_effector_name=ur5.end_effector_name(),
-		group_name=ur5.MOVE_GROUP_ARM,
-		callback_group=callback_group,
-	)
 
 	executor = rclpy.executors.MultiThreadedExecutor(2)
 	executor.add_node(enftf)
@@ -134,7 +237,7 @@ def main():
 
 	for i in range(len(position_r1)):
 			time.sleep(2)
-			moveit2.add_collision_mesh(
+			enftf.moveit2.add_collision_mesh(
 				filepath=filepath1, id=mesh_rack_id[i], position=rack_pos[i], quat_xyzw=rack_quat[i], frame_id=ur5.base_link_name()
 			)
 			time.sleep(2)
@@ -143,137 +246,11 @@ def main():
 			#     filepath=filepath2, id=mesh_box_id[i], position=box_pos[i], quat_xyzw=box_quat[i], frame_id=ur5.base_link_name()
 			# )
 			# time.sleep(2)
-	moveit2.add_collision_mesh(
+	enftf.moveit2.add_collision_mesh(
 	filepath=filepath2, id="base", position=base_pos[0], quat_xyzw=base_pos[1], frame_id=ur5.base_link_name())
-
-	while rclpy.ok():
-		try:
-			tool0 = enftf.tf_buffer.lookup_transform('base_link', "tool0", rclpy.time.Time())
-			box1 = enftf.tf_buffer.lookup_transform('base_link', "obj_1", rclpy.time.Time())
-
-			while rclpy.ok():
-				try:
-					box1 = enftf.tf_buffer.lookup_transform('base_link', "obj_1", rclpy.time.Time())
-					tool0 = enftf.tf_buffer.lookup_transform('base_link', "tool0", rclpy.time.Time())
-					# print(round(tool0.transform.translation.x, 2))
-					# print(round(box1.transform.translation.x, 2))
-				except:
-					pass
-				print(f"y ={round((box1.transform.translation.y) - (tool0.transform.translation.y),4)}")
-				print(f"x ={round((box1.transform.translation.x) - (tool0.transform.translation.x),4)}")
-				print(f"z ={round((box1.transform.translation.z) - (tool0.transform.translation.z),4)}")
-				if round((box1.transform.translation.y) - (tool0.transform.translation.y),4) > 0.003 or round((box1.transform.translation.x) - (tool0.transform.translation.x),4) > 0.003 or round((box1.transform.translation.z) - (tool0.transform.translation.z),4) > 0.003:
-					__twist_msg = TwistStamped()
-					__twist_msg.header.stamp = enftf.get_clock().now().to_msg()
-					__twist_msg.header.frame_id = ur5.base_link_name()
-					__twist_msg.twist.linear.y = round((box1.transform.translation.y) - (tool0.transform.translation.y),4) *2
-					__twist_msg.twist.linear.x = round((box1.transform.translation.x) - (tool0.transform.translation.x),4) *2
-					__twist_msg.twist.linear.z = round((box1.transform.translation.z) - (tool0.transform.translation.z),4) *2
-					__twist_pub.publish(__twist_msg)
-				else :
-					while not gripper_control.wait_for_service(timeout_sec=1.0):
-						enftf.get_logger().info('EEF service not available, waiting again...')
-					print("tryiing to attach")
-					req = AttachLink.Request()
-					req.model1_name =  'box1'      
-					req.link1_name  = 'link'       
-					req.model2_name =  'ur5'       
-					req.link2_name  = 'wrist_3_link'
-					gripper_control.call_async(req)
-					break
-			while rclpy.ok():
-				try:
-					box1 = enftf.tf_buffer.lookup_transform('base_link', "obj_1", rclpy.time.Time())
-					tool0 = enftf.tf_buffer.lookup_transform('base_link', "tool0", rclpy.time.Time())
-					print(round(tool0.transform.translation.x,2))
-				except:
-					pass
-				if (round(tool0.transform.translation.x,2) > 0.21):
-					__twist_msg = TwistStamped()
-					__twist_msg.header.stamp = enftf.get_clock().now().to_msg()
-					__twist_msg.header.frame_id = ur5.base_link_name()
-					__twist_msg.twist.linear.z = 0.04
-					__twist_msg.twist.linear.x = -0.2
-					__twist_pub.publish(__twist_msg)
-				else:
-					break
-			
-			moveit2.move_to_pose(position=[-1, 0.12, 0.5], quat_xyzw=[box1.transform.rotation.x, box1.transform.rotation.y, -box1.transform.rotation.z, -box1.transform.rotation.w], cartesian=False,tolerance_position = 0.4,tolerance_orientation=0.4)
-			enftf.switch == True
-			moveit2.wait_until_executed()
-			moveit2.move_to_pose(position=[-0.8, 0.12, 0.5], quat_xyzw=[box1.transform.rotation.x, box1.transform.rotation.y, -box1.transform.rotation.z, -box1.transform.rotation.w], cartesian=False,tolerance_position = 0.4,tolerance_orientation=0.4)
-			moveit2.wait_until_executed()
-			while not gripper_control.wait_for_service(timeout_sec=1.0):
-				enftf.get_logger().info('EEF service not available, waiting again...')
-			print("tryiing to attach")
-			req = DetachLink.Request()
-			req.model1_name =  'box1'      
-			req.link1_name  = 'link'       
-			req.model2_name =  'ur5'       
-			req.link2_name  = 'wrist_3_link'
-			gripper_control_off.call_async(req)
-				
-			
-			rclpy.shutdown()
-			exit(0)
-				
-
-				# else:
-				#     rclpy.shutdown()
-				#     exit(0)
-
-				# if round((box1.transform.translation.x) - (tool0.transform.translation.x),4) > 0.0002:
-				#     __twist_msg = TwistStamped()
-				#     __twist_msg.header.stamp = enftf.get_clock().now().to_msg()
-				#     __twist_msg.header.frame_id = ur5.base_link_name()
-				#     __twist_msg.twist.linear.x = 0.2
-				#     __twist_pub.publish(__twist_msg)
-				# elif round((box1.transform.translation.x) - (tool0.transform.translation.x),4) < 0.1:
-				#     __twist_msg = TwistStamped()
-				#     __twist_msg.header.stamp = enftf.get_clock().now().to_msg()
-				#     __twist_msg.header.frame_id = ur5.base_link_name()
-				#     __twist_msg.twist.linear.x = -0.2
-				#     __twist_pub.publish(__twist_msg)
-				# if round((box1.transform.translation.z) - (tool0.transform.translation.z),4) > 0.1:
-				#     __twist_msg = TwistStamped()
-				#     __twist_msg.header.stamp = enftf.get_clock().now().to_msg()
-				#     __twist_msg.header.frame_id = ur5.base_link_name()
-				#     __twist_msg.twist.linear.z = 0.2
-				#     __twist_pub.publish(__twist_msg)
-				# elif round((box1.transform.translation.z) - (tool0.transform.translation.z),4) < 0.1:
-				#     __twist_msg = TwistStamped()
-				#     __twist_msg.header.stamp = enftf.get_clock().now().to_msg()
-				#     __twist_msg.header.frame_id = ur5.base_link_name()
-				#     __twist_msg.twist.linear.z = -0.2
-				#     __twist_pub.publish(__twist_msg)
-
-				
-
-			
-			# while round(tool0.transform.translation.x,2) > -1.20:
-			#     try:
-			#         tool0 = enftf.tf_buffer.lookup_transform('base_link', "tool0", rclpy.time.Time())
-			#         print((tool0.transform.translation.x))
-			#     except:
-			#         pass
-			#     __twist_msg = TwistStamped()
-			#     __twist_msg.header.stamp = enftf.get_clock().now().to_msg()
-			#     __twist_msg.header.frame_id = ur5.base_link_name()
-			#     __twist_msg.twist.linear.x = -0.5
-			#     __twist_pub.publish(__twist_msg)
-			# __twist_msg_stop = TwistStamped()
-			# __twist_msg_stop.header.stamp = enftf.get_clock().now().to_msg()
-			# __twist_msg_stop.header.frame_id = ur5.base_link_name()
-			# __twist_msg_stop.twist.linear.x = 0.0
-			# __twist_pub.publish(__twist_msg_stop)
-
-
+	enftf.servo(str(1))
 
 	
-
-			
-		except:
-			pass
 
 		
 
