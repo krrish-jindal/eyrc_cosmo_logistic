@@ -67,6 +67,7 @@ class endf(Node):
 		self.gripper_control = self.create_client(AttachLink, '/GripperMagnetON')
 		self.gripper_control_off = self.create_client(DetachLink, '/GripperMagnetOFF')
 		self.callback_group = ReentrantCallbackGroup()
+		self.pz = 0
 
 		self.moveit2 = MoveIt2(
 		node=self,
@@ -74,8 +75,74 @@ class endf(Node):
 		base_link_name=ur5.base_link_name(),
 		end_effector_name=ur5.end_effector_name(),
 		group_name=ur5.MOVE_GROUP_ARM,
-		callback_group=self.callback_group,
-	)
+		callback_group=self.callback_group,)
+		self.declare_parameter(
+        "joint_positions_initial",
+        [
+            0.0,
+            -2.39,
+            2.4,
+            -3.15,
+            -1.58,
+            3.15
+        ],
+    )
+		self.declare_parameter(
+        "joint_positions_positive",
+        [
+            1.57,
+            -2.39,
+            2.4,
+            -3.15,
+            -1.58,
+            3.15
+        ],
+    )
+		self.declare_parameter(
+        "joint_positions_negative",
+        [
+            -1.57,
+            -2.39,
+            2.4,
+            -3.15,
+            -1.58,
+            3.15
+        ],
+    )
+		self.declare_parameter(
+        "joint_positions_final_1",
+        [
+            0.0,
+            -2.07694,
+            -0.418879,
+            -3.26377,
+            -1.41372,
+            3.05432
+        ],
+    )
+		self.declare_parameter(
+        "joint_positions_final_2",
+        [
+            0.541052,
+            -2.35619,
+            -0.698132,
+            -3.14159,
+            -1.58825,
+            3.14159
+        ],
+    )
+		self.declare_parameter(
+        "joint_positions_final_3",
+        [
+            0.244346,
+            -2.16921,
+            -0.820305,
+            -3.14159,
+            -1.58825,
+            3.14159
+        ],
+    )
+
 	def servo(self, box_no):
 		while rclpy.ok():
 			try:
@@ -119,7 +186,11 @@ class endf(Node):
 					print(f"y ={round((box49.transform.translation.y) - (tool0.transform.translation.y),4)}")
 					print(f"x ={round((box49.transform.translation.x) - (tool0.transform.translation.x),4)}")
 					print(f"z ={round((box49.transform.translation.z) - (tool0.transform.translation.z),4)}")
-					
+					joint_positions_initial = (self.get_parameter("joint_positions_initial").get_parameter_value().double_array_value)
+					joint_positions_final_1 = (self.get_parameter("joint_positions_final_1").get_parameter_value().double_array_value)
+					joint_positions_final_2 = (self.get_parameter("joint_positions_final_2").get_parameter_value().double_array_value)
+					joint_positions_final_3 = (self.get_parameter("joint_positions_final_3").get_parameter_value().double_array_value)
+
 					if round((box49.transform.translation.y) - (tool0.transform.translation.y),4) > 0.003 or round((box49.transform.translation.x) - (tool0.transform.translation.x),4) > 0.003 or round((box49.transform.translation.z) - (tool0.transform.translation.z),4) > 0.003:
 						__twist_msg = TwistStamped()
 						__twist_msg.header.stamp = self.get_clock().now().to_msg()
@@ -143,24 +214,62 @@ class endf(Node):
 					try:
 						box49 = self.tf_buffer.lookup_transform('base_link', f"obj_{box_no}", rclpy.time.Time())
 						tool0 = self.tf_buffer.lookup_transform('base_link', "tool0", rclpy.time.Time())
-						print(round(tool0.transform.translation.x,2))
+						print(f"x = {round(tool0.transform.translation.x,2)}")
+						print(f"y = {round(tool0.transform.translation.x,2)}")
+
 					except:
 						pass
-					if (round(tool0.transform.translation.x,2) > 0.21):
+					if box_no == str(1) and (round(tool0.transform.translation.x,2) > 0.21):
+						__twist_msg = TwistStamped()
+						__twist_msg.header.stamp = self.get_clock().now().to_msg()
+						__twist_msg.header.frame_id = ur5.base_link_name()
+						__twist_msg.twist.linear.z = -0.04
+						__twist_msg.twist.linear.x = -0.4
+						self.twist_pub.publish(__twist_msg)
+					elif box_no == str(49) and (round(tool0.transform.translation.y,2) > 0.21):
 						__twist_msg = TwistStamped()
 						__twist_msg.header.stamp = self.get_clock().now().to_msg()
 						__twist_msg.header.frame_id = ur5.base_link_name()
 						__twist_msg.twist.linear.z = 0.04
+						__twist_msg.twist.linear.y = -0.2
+						self.twist_pub.publish(__twist_msg)
+					elif box_no == str(3) and (round(tool0.transform.translation.y,2) < -0.22):
+						__twist_msg = TwistStamped()
+						__twist_msg.header.stamp = self.get_clock().now().to_msg()
+						__twist_msg.header.frame_id = ur5.base_link_name()
+						__twist_msg.twist.linear.z = 0.04
+						__twist_msg.twist.linear.y = 0.2
 						__twist_msg.twist.linear.x = -0.2
 						self.twist_pub.publish(__twist_msg)
 					else:
 						break
-				
-				self.moveit2.move_to_pose(position=[-0.8, 0.12, 0.5], quat_xyzw=[box49.transform.rotation.x, box49.transform.rotation.y, -box49.transform.rotation.z, -box49.transform.rotation.w], cartesian=False,tolerance_position = 0.4,tolerance_orientation=0.4)
-				self.switch == True
-				self.moveit2.wait_until_executed()
-				self.moveit2.move_to_pose(position=[-0.8, 0.12, 0.5], quat_xyzw=[box49.transform.rotation.x, box49.transform.rotation.y, -box49.transform.rotation.z, -box49.transform.rotation.w], cartesian=False,tolerance_position = 0.4,tolerance_orientation=0.4)
-				self.moveit2.wait_until_executed()
+				if self.pz == 0:
+					self.moveit2.move_to_configuration(joint_positions_initial)
+					self.moveit2.wait_until_executed()
+					self.moveit2.move_to_configuration(joint_positions_final_1)
+					self.moveit2.wait_until_executed()
+					self.moveit2.move_to_configuration(joint_positions_final_1)
+					self.moveit2.wait_until_executed()
+
+					self.pz = self.pz +1
+				elif self.pz == 1:
+					self.moveit2.move_to_configuration(joint_positions_initial)
+					self.moveit2.wait_until_executed()
+					self.moveit2.move_to_configuration(joint_positions_final_2)
+					self.moveit2.wait_until_executed()
+					self.moveit2.move_to_configuration(joint_positions_final_2)
+					self.moveit2.wait_until_executed()
+
+					self.pz = self.pz +1
+				else:
+					self.moveit2.move_to_configuration(joint_positions_initial)
+					self.moveit2.wait_until_executed()
+					self.moveit2.move_to_configuration(joint_positions_final_3)
+					self.moveit2.wait_until_executed()
+					self.moveit2.move_to_configuration(joint_positions_final_3)
+					self.moveit2.wait_until_executed()
+
+
 				while not self.gripper_control.wait_for_service(timeout_sec=1.0):
 					self.enftf.get_logger().info('EEF service not available, waiting again...')
 				print("tryiing to attach")
@@ -170,11 +279,8 @@ class endf(Node):
 				req.model2_name =  'ur5'       
 				req.link2_name  = 'wrist_3_link'
 				self.gripper_control_off.call_async(req)
-
+				break
 					
-				
-				rclpy.shutdown()
-				exit(0)
 			except:
 				pass
 
@@ -231,8 +337,9 @@ def main():
 	mesh_id2 = path.basename(filepath2).split(".")[0]
 	mesh_box_id = ["box_1","box_2","box_3"]
 	mesh_rack_id = ["rack_1","rack_2","rack_3"]
-	__twist_pub = enftf.create_publisher(TwistStamped, "/servo_node/delta_twist_cmds", 10)
-
+	joint_positions_initial = (enftf.get_parameter("joint_positions_initial").get_parameter_value().double_array_value)
+	joint_positions_positive = (enftf.get_parameter("joint_positions_positive").get_parameter_value().double_array_value)
+	joint_positions_negative = (enftf.get_parameter("joint_positions_negative").get_parameter_value().double_array_value)
 
 
 	for i in range(len(position_r1)):
@@ -249,6 +356,22 @@ def main():
 	enftf.moveit2.add_collision_mesh(
 	filepath=filepath2, id="base", position=base_pos[0], quat_xyzw=base_pos[1], frame_id=ur5.base_link_name())
 	enftf.servo(str(1))
+
+	enftf.moveit2.move_to_configuration(joint_positions_initial)
+	enftf.moveit2.wait_until_executed()
+	enftf.moveit2.move_to_configuration(joint_positions_positive)
+	enftf.moveit2.wait_until_executed()
+	enftf.servo(str(49))
+
+	enftf.moveit2.move_to_configuration(joint_positions_initial)
+	enftf.moveit2.wait_until_executed()
+	enftf.moveit2.move_to_configuration(joint_positions_negative)
+	enftf.moveit2.wait_until_executed()
+	enftf.servo(str(3))
+
+
+
+
 
 	
 
