@@ -68,8 +68,8 @@ def generate_launch_description():
     	package='gazebo_ros', 
         name='ebot_spawner',
     	executable='spawn_entity.py',
-        #arguments=['-entity', 'ebot', '-topic', 'robot_description_ebot', '-x', '1.1', '-y', '4.35', '-z', '0.1', '-Y', '3.14'],
-        arguments=['-entity', 'ebot', '-topic', 'robot_description_ebot', '-x', '1.964522', '-y', '-6.966175', '-z', '0.050027', '-Y', '0.0'],
+        # arguments=['-entity', 'ebot', '-topic', 'robot_description_ebot', '-x', '1.1', '-y', '4.35', '-z', '0.1', '-Y', '3.14'],
+        arguments=['-entity', 'ebot', '-topic', 'robot_description_ebot', '-x', '0.0', '-y', '0.0', '-z', '0.1', '-Y', '0.0'],
         output='screen'
     )
 
