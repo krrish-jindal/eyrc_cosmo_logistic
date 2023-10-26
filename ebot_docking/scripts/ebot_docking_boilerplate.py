@@ -30,24 +30,28 @@ class MyRobotDockingController(Node):
         # Create a callback group for managing callbacks
         self.callback_group = ReentrantCallbackGroup()
 
+        self.get_logger().info("Server Started")
+
+
         # Subscribe to odometry data for robot pose information
         self.odom_sub = self.create_subscription(Odometry, 'odom', self.odometry_callback, 10)
 
         # Subscribe to ultrasonic sensor data for distance measurements
         self.ultrasonic_rl_sub = self.create_subscription(Range, '/ultrasonic_rl/scan', self.ultrasonic_rl_callback, 10)
         # Add another one here
+        self.ultrasonic_rr_sub = self.create_subscription(Range, '/ultrasonic_rr/scan', self.ultrasonic_rr_callback, 10)
 
 
         # Create a ROS2 service for controlling docking behavior, can add another custom service message
         self.dock_control_srv = self.create_service(DockSw, 'dock_control', self.dock_control_callback, callback_group=self.callback_group)
 
         # Create a publisher for sending velocity commands to the robot
-        #
+        self.vel_pub = self.create_publisher(Twist, "/cmd_vel", 10)
 
         # Initialize all  flags and parameters here
         self.is_docking = False
-        #         
-        # 
+        self.robot_pose = [0,0,0]         
+        self.dock_aligned = False
         # 
         # 
         # 
@@ -71,8 +75,8 @@ class MyRobotDockingController(Node):
         self.usrleft_value = msg.range
 
     # Callback function for the right ultrasonic sensor
-    #
-    #
+    def ultrasonic_rr_callback(self, msg):
+        self.usrright_value = msg.range
 
     # Utility function to normalize angles within the range of -π to π (OPTIONAL)
     def normalize_angle(self, angle):
@@ -95,12 +99,17 @@ class MyRobotDockingController(Node):
     # Callback function for the DockControl service
     def dock_control_callback(self, request, response):
         # Extract desired docking parameters from the service request
-        #
-        #
+        self.linear_dock = request.linear_dock
+        self.orientation_dock = request.orientation_dock
+        self.distance = request.distance
+        self.orientation = request.orientation
+        self.rack_no = request.rack_no
+        print(self.distance)
+        
 
         # Reset flags and start the docking process
-        #
-        #
+        self.linear_dock = False
+        self.orientation_dock = False
 
         # Log a message indicating that docking has started
         self.get_logger().info("Docking started!")
