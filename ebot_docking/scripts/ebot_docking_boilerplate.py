@@ -52,8 +52,10 @@ class MyRobotDockingController(Node):
         self.is_docking = False
         self.robot_pose = [0,0,0]         
         self.dock_aligned = False
-        # 
-        # 
+        self.kp = 0.7
+        self.normalize_yaw_bot = 0
+        self.normalize_yaw_rack = 0
+        self.difference = 0
         # 
         # 
 
@@ -68,6 +70,7 @@ class MyRobotDockingController(Node):
         quaternion_array = msg.pose.pose.orientation
         orientation_list = [quaternion_array.x, quaternion_array.y, quaternion_array.z, quaternion_array.w]
         _, _, yaw = euler_from_quaternion(orientation_list)
+        
         self.robot_pose[2] = yaw
 
     # Callback function for the left ultrasonic sensor
@@ -80,21 +83,49 @@ class MyRobotDockingController(Node):
 
     # Utility function to normalize angles within the range of -π to π (OPTIONAL)
     def normalize_angle(self, angle):
-        
-        pass
+        if angle < 0:
+            angle = math.pi + (math.pi + angle)
+        return angle
 
     # Main control loop for managing docking behavior
 
     def controller_loop(self):
+        vel = Twist()
 
         # The controller loop manages the robot's linear and angular motion 
         # control to achieve docking alignment and execution
         if self.is_docking:
+            
             # ...
             # Implement control logic here for linear and angular motion
             # For example P-controller is enough, what is P-controller go check it out !
             # ...
-            pass
+            self.difference = self.normalize_yaw_rack - self.normalize_yaw_bot
+            print(self.usrleft_value)
+            if self.orientation_dock:
+                if abs(self.difference) > 0.02:
+                    vel.angular.z = self.difference * self.kp
+                    self.vel_pub.publish(vel)
+                else:
+                    vel.angular.z = 0.0
+                    self.vel_pub.publish(vel)
+                    self.orientation_dock = False
+                    self.linear_dock = False
+                    print("successfully oriented")
+            elif self.linear_dock == False:
+                print("-----------------")
+                if self.usrleft_value > 0.15:
+                    print("+++++++++++++++")
+                    vel.linear.x = -self.usrleft_value * 0.4
+                    self.vel_pub.publish(vel)
+                else:
+                    vel.linear.x = 0.0
+                    self.vel_pub.publish(vel)
+                    self.linear_dock = True
+                    self.is_docking = False
+                    self.dock_aligned = True
+
+                
 
     # Callback function for the DockControl service
     def dock_control_callback(self, request, response):
@@ -104,12 +135,17 @@ class MyRobotDockingController(Node):
         self.distance = request.distance
         self.orientation = request.orientation
         self.rack_no = request.rack_no
-        print(self.distance)
-        
+        # print(self.orientation)
+
+        self.normalize_yaw_rack = self.normalize_angle(self.orientation)
+        # print(self.normalize_yaw_rack)
+        self.normalize_yaw_bot = self.normalize_angle(self.robot_pose[2])
+        # print(self.normalize_yaw_bot)
+
 
         # Reset flags and start the docking process
-        self.linear_dock = False
-        self.orientation_dock = False
+        self.dock_aligned = False
+        print(self.dock_aligned)
 
         # Log a message indicating that docking has started
         self.get_logger().info("Docking started!")
@@ -119,7 +155,13 @@ class MyRobotDockingController(Node):
 
         # Wait until the robot is aligned for docking
         while not self.dock_aligned:
+            self.normalize_yaw_rack = self.normalize_angle(self.orientation)
+            self.normalize_yaw_bot = self.normalize_angle(self.robot_pose[2])
+            self.is_docking = True
+            self.linear_dock = True
+            self.orientation_dock = True
             self.get_logger().info("Waiting for alignment...")
+            self.controller_loop()
             rate.sleep()
 
         # Set the service response indicating success
