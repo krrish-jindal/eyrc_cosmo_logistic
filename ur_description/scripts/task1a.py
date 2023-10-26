@@ -286,7 +286,6 @@ class aruco_tf(Node):
 			angle_aruco = angle_list[i]
 			width_aruco = width_list[i]
 			center=center_list[i]
-			print(angle_aruco)
 			angle_aruco = ((0.788*angle_aruco[2]) - ((angle_aruco[2]**2)/3160))
 			if round(angle_aruco) == 0:
 				angle_aruco = (angle_aruco) + math.pi
@@ -294,7 +293,6 @@ class aruco_tf(Node):
 			else:
 				roll, pitch, yaw = 0, -0.261, angle_aruco
 
-			print(angle_aruco)
 
 			rpy.append(roll)
 			rpy.append(pitch)
@@ -327,6 +325,7 @@ class aruco_tf(Node):
 			qz = q_rot[2]
 			qx = q_rot[0]
 			qw = q_rot[3]
+			print(aruco_id,"x-",qx,"y-",qy,"z-",qz,"w-",qw)
 
 			x = tvec[i][0][0]
 			y = tvec[i][0][1]
