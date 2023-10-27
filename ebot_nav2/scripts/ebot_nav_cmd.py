@@ -91,13 +91,13 @@ def main():
     orientation_rack_1 = 3.139999
     orientation_rack_2 = -1.570000
     orientation_rack_3 = 1.569999
-    rack_list=["rack1","Rack2","Rack3"]
+    rack_list=["rack1","rack2","rack3"]
 
     goal_pick_1 = PoseStamped()
     goal_pick_1.header.frame_id = 'map'
     goal_pick_1.header.stamp = navigator.get_clock().now().to_msg()
-    goal_pick_1.pose.position.x = 0.32509
-    goal_pick_1.pose.position.y = 4.385162
+    goal_pick_1.pose.position.x = 0.416640
+    goal_pick_1.pose.position.y = 4.465266
     goal_pick_1.pose.orientation.x = 0.0
     goal_pick_1.pose.orientation.y = 0.0
     goal_pick_1.pose.orientation.z = 0.7077099
@@ -106,8 +106,8 @@ def main():
 
     goal_pick_2 = PoseStamped()
     goal_pick_2.header.frame_id = 'map'
-    goal_pick_2.pose.position.x = 1.949751
-    goal_pick_2.pose.position.y = 2.108228
+    goal_pick_2.pose.position.x = 2.057601
+    goal_pick_2.pose.position.y = 2.511842
     goal_pick_2.pose.orientation.x = 0.0
     goal_pick_2.pose.orientation.y = 0.0
     goal_pick_2.pose.orientation.z = 0.0
@@ -116,8 +116,8 @@ def main():
     goal_pick_3 = PoseStamped()
     goal_pick_3.header.frame_id = 'map'
     goal_pick_3.header.stamp = navigator.get_clock().now().to_msg()
-    goal_pick_3.pose.position.x = 1.964522
-    goal_pick_3.pose.position.y = -6.966175
+    goal_pick_3.pose.position.x = 1.991417
+    goal_pick_3.pose.position.y = -7.253540
     goal_pick_3.pose.orientation.x = 0.0
     goal_pick_3.pose.orientation.y = 0.0
     goal_pick_3.pose.orientation.z = 0.0
@@ -133,6 +133,17 @@ def main():
     goal_drop_1.pose.orientation.z = -0.9999787
     goal_drop_1.pose.orientation.w =  0.0065288 
 
+    goal_drop_br_1 = PoseStamped()
+    goal_drop_br_1.header.frame_id = 'map'
+    goal_drop_br_1.header.stamp = navigator.get_clock().now().to_msg()
+    goal_drop_br_1.pose.position.x =-0.198191
+    goal_drop_br_1.pose.position.y = -2.330280
+    goal_drop_br_1.pose.orientation.x = 0.0
+    goal_drop_br_1.pose.orientation.y = 0.0
+    goal_drop_br_1.pose.orientation.z =  -0.9999787
+    goal_drop_br_1.pose.orientation.w = 0.0065288 
+    navigator.waitUntilNav2Active()
+    
     goal_drop_2 = PoseStamped()
     goal_drop_2.header.frame_id = 'map'
     goal_drop_2.header.stamp = navigator.get_clock().now().to_msg()
@@ -142,7 +153,18 @@ def main():
     goal_drop_2.pose.orientation.y = 0.0
     goal_drop_2.pose.orientation.z =  -0.70398
     goal_drop_2.pose.orientation.w =  0.7102198
-
+  
+    goal_drop_br_2 = PoseStamped()
+    goal_drop_br_2.header.frame_id = 'map'
+    goal_drop_br_2.header.stamp = navigator.get_clock().now().to_msg()
+    goal_drop_br_2.pose.position.x =1.401671
+    goal_drop_br_2.pose.position.y = -3.998043
+    goal_drop_br_2.pose.orientation.x = 0.0
+    goal_drop_br_2.pose.orientation.y = 0.0
+    goal_drop_br_2.pose.orientation.z =  0.6921004
+    goal_drop_br_2.pose.orientation.w = 0.7218012 
+    navigator.waitUntilNav2Active()
+   
     goal_drop_3 = PoseStamped()
     goal_drop_3.header.frame_id = 'map'
     goal_drop_3.header.stamp = navigator.get_clock().now().to_msg()
@@ -154,6 +176,17 @@ def main():
     goal_drop_3.pose.orientation.w = 0.7218012 
     navigator.waitUntilNav2Active()
 
+    goal_drop_br_3 = PoseStamped()
+    goal_drop_br_3.header.frame_id = 'map'
+    goal_drop_br_3.header.stamp = navigator.get_clock().now().to_msg()
+    goal_drop_br_3.pose.position.x =1.369186
+    goal_drop_br_3.pose.position.y = -0.861295
+    goal_drop_br_3.pose.orientation.x = 0.0
+    goal_drop_br_3.pose.orientation.y = 0.0
+    goal_drop_br_3.pose.orientation.z =  0.6921004
+    goal_drop_br_3.pose.orientation.w = 0.7218012 
+    navigator.waitUntilNav2Active()
+
 # Pick Rack_1
     navigator.goToPose(goal_pick_1)
     nav_reach(1)
@@ -161,6 +194,8 @@ def main():
     rack_attach(rack_list[0])
 
 # Drop Rack_1
+    navigator.goToPose(goal_drop_br_1)
+    nav_reach(2)
     navigator.goToPose(goal_drop_1)
     nav_reach(2)
     rack_detach(rack_list[0])
@@ -172,6 +207,8 @@ def main():
     rack_attach(rack_list[1])
 
 #  Drop Rack_2
+    navigator.goToPose(goal_drop_br_2)
+    nav_reach(4)
     navigator.goToPose(goal_drop_2)
     nav_reach(4)
     rack_detach(rack_list[1])
@@ -184,6 +221,8 @@ def main():
     rack_attach(rack_list[2])
     
 #  Drop Rack_3
+    navigator.goToPose(goal_drop_br_3)
+    nav_reach(6)
     navigator.goToPose(goal_drop_3)
     nav_reach(6)
     rack_detach(rack_list[2])
