@@ -7,14 +7,17 @@ from rclpy.node import Node
 from ebot_docking.srv import DockSw
 from linkattacher_msgs.srv import AttachLink
 from linkattacher_msgs.srv import DetachLink
-
+from rclpy.qos import QoSProfile
+from rclpy.node import Node
 from geometry_msgs.msg import Twist
 import time
 
 
 
 def send_request(orientation):
+
         request_dock = DockSw.Request()
+        request_dock.orientation_dock = True
         request_dock.orientation = orientation
         future = client_docking.call_async(request_dock)
         rclpy.spin_until_future_complete(node, future)
@@ -37,6 +40,24 @@ def rack_attach(rack):
     vel_pub.publish(vel_msg)
     return atc.result()
 
+def rack_detach(rack):
+
+    req = DetachLink.Request()
+    req.model1_name =  'ebot'      
+    req.link1_name  = 'ebot_base_link'       
+    req.model2_name =  rack       
+    req.link2_name  = 'link'
+    print("Detaching")
+    dtc=detach.call_async(req)
+    rclpy.spin_until_future_complete(node, dtc)
+    vel_msg.linear.x=0.8
+    vel_pub.publish(vel_msg)
+    print(vel_msg)
+    time.sleep(3)
+    vel_msg.linear.x=0.0
+    vel_pub.publish(vel_msg)
+    return dtc.result()
+
 def nav_reach(goal):
 
     while not navigator.isTaskComplete():
@@ -55,38 +76,46 @@ def nav_reach(goal):
     else:
         print('Goal has an invalid return status!')
 
-def rack_detach(rack):
 
-    req = DetachLink.Request()
-    req.model1_name =  'ebot'      
-    req.link1_name  = 'ebot_base_link'       
-    req.model2_name =  rack       
-    req.link2_name  = 'link'
+def move_with_linear_x(duration, linear_x, angular_z):
+    start_time = time.time()  # Get the current time
+    end_time = start_time + duration
 
-    dtc=detach.call_async(req)
-    rclpy.spin_until_future_complete(node, dtc)
-    vel_msg.linear.x=0.2
+    # Create a Twist message to control the linear.x (forward movement)
+    vel_msg = Twist()
+    vel_msg.linear.x = linear_x
+    vel_msg.angular.z = angular_z
+
+    while time.time() < end_time:
+        vel_pub.publish(vel_msg)  # Publish the Twist message to control the robot's movement
+
+    # Stop the forward movement by setting linear.x to 0
+    vel_msg.linear.x = 0.0
+    vel_msg.angular.z = 0.0
     vel_pub.publish(vel_msg)
-    time.sleep(2)
-    vel_msg.linear.x=0.0
-    vel_pub.publish(vel_msg)
-    return dtc.result()
 
+
+
+def publish_vel_callback():
+    # Publish the Twist message to control the robot's movement
+    vel_pub.publish(vel_msg)
 
 def main():
-    global client_docking, node ,attach ,detach, navigator ,vel_msg,vel_pub
+    global client_docking, node ,attach ,detach, navigator ,vel_msg, vel_pub
     rclpy.init()
 
     node = rclpy.create_node("nav_dock")
     attach = node.create_client(srv_type=AttachLink, srv_name='/ATTACH_LINK')
-
     detach = node.create_client(srv_type=DetachLink, srv_name='/DETACH_LINK')
-
-
     client_docking = node.create_client(srv_type=DockSw, srv_name='dock_control')
     vel_pub = node.create_publisher(Twist, "/cmd_vel", 10)
-    vel_msg=Twist()
+    vel_msg = Twist()
     navigator = BasicNavigator()
+
+    publish_rate = 10  # Adjust this value as needed (e.g., 10 Hz)
+    timer_period = 1.0 / publish_rate  # Calculate the timer period in seconds
+    node.create_timer(timer_period, publish_vel_callback)
+
     
     orientation_rack_1 = 3.139999
     orientation_rack_2 = -1.570000
@@ -96,8 +125,8 @@ def main():
     goal_pick_1 = PoseStamped()
     goal_pick_1.header.frame_id = 'map'
     goal_pick_1.header.stamp = navigator.get_clock().now().to_msg()
-    goal_pick_1.pose.position.x = 0.416640
-    goal_pick_1.pose.position.y = 4.465266
+    goal_pick_1.pose.position.x = -0.038125
+    goal_pick_1.pose.position.y = 4.351180
     goal_pick_1.pose.orientation.x = 0.0
     goal_pick_1.pose.orientation.y = 0.0
     goal_pick_1.pose.orientation.z = 0.7077099
@@ -106,8 +135,8 @@ def main():
 
     goal_pick_2 = PoseStamped()
     goal_pick_2.header.frame_id = 'map'
-    goal_pick_2.pose.position.x = 2.057601
-    goal_pick_2.pose.position.y = 2.511842
+    goal_pick_2.pose.position.x = 1.960219
+    goal_pick_2.pose.position.y = 2.118804
     goal_pick_2.pose.orientation.x = 0.0
     goal_pick_2.pose.orientation.y = 0.0
     goal_pick_2.pose.orientation.z = 0.0
@@ -116,8 +145,8 @@ def main():
     goal_pick_3 = PoseStamped()
     goal_pick_3.header.frame_id = 'map'
     goal_pick_3.header.stamp = navigator.get_clock().now().to_msg()
-    goal_pick_3.pose.position.x = 1.991417
-    goal_pick_3.pose.position.y = -7.253540
+    goal_pick_3.pose.position.x = 1.998759
+    goal_pick_3.pose.position.y = -7.102119
     goal_pick_3.pose.orientation.x = 0.0
     goal_pick_3.pose.orientation.y = 0.0
     goal_pick_3.pose.orientation.z = 0.0
@@ -127,7 +156,7 @@ def main():
     goal_drop_1.header.frame_id = 'map'
     goal_drop_1.header.stamp = navigator.get_clock().now().to_msg()
     goal_drop_1.pose.position.x = 0.798571
-    goal_drop_1.pose.position.y = -2.455000
+    goal_drop_1.pose.position.y = -2.330280
     goal_drop_1.pose.orientation.x = 0.0
     goal_drop_1.pose.orientation.y = 0.0
     goal_drop_1.pose.orientation.z = -0.9999787
@@ -147,12 +176,12 @@ def main():
     goal_drop_2 = PoseStamped()
     goal_drop_2.header.frame_id = 'map'
     goal_drop_2.header.stamp = navigator.get_clock().now().to_msg()
-    goal_drop_2.pose.position.x = 1.650000
-    goal_drop_2.pose.position.y = -3.684832
+    goal_drop_2.pose.position.x = 1.695165
+    goal_drop_2.pose.position.y = -3.825960
     goal_drop_2.pose.orientation.x = 0.0
     goal_drop_2.pose.orientation.y = 0.0
-    goal_drop_2.pose.orientation.z =  -0.70398
-    goal_drop_2.pose.orientation.w =  0.7102198
+    goal_drop_2.pose.orientation.z =  -0.7118631
+    goal_drop_2.pose.orientation.w =  0.7023182
   
     goal_drop_br_2 = PoseStamped()
     goal_drop_br_2.header.frame_id = 'map'
@@ -161,8 +190,8 @@ def main():
     goal_drop_br_2.pose.position.y = -3.998043
     goal_drop_br_2.pose.orientation.x = 0.0
     goal_drop_br_2.pose.orientation.y = 0.0
-    goal_drop_br_2.pose.orientation.z =  0.6921004
-    goal_drop_br_2.pose.orientation.w = 0.7218012 
+    goal_drop_br_2.pose.orientation.z =  -0.7118631
+    goal_drop_br_2.pose.orientation.w =  0.7023182
     navigator.waitUntilNav2Active()
    
     goal_drop_3 = PoseStamped()
@@ -199,12 +228,16 @@ def main():
     navigator.goToPose(goal_drop_1)
     nav_reach(2)
     rack_detach(rack_list[0])
+    move_with_linear_x(3,0.5,-1.0)
+
 
 # Pick Rack_2
     navigator.goToPose(goal_pick_2)
     nav_reach(3)
+    move_with_linear_x(1,0.1,0.0)
     send_request(orientation_rack_2)
     rack_attach(rack_list[1])
+    move_with_linear_x(2,0.1,-0.2)
 
 #  Drop Rack_2
     navigator.goToPose(goal_drop_br_2)
@@ -212,6 +245,7 @@ def main():
     navigator.goToPose(goal_drop_2)
     nav_reach(4)
     rack_detach(rack_list[1])
+    move_with_linear_x(2,0.1,0.0)
 
 
 # Pick Rack_3
@@ -219,6 +253,7 @@ def main():
     nav_reach(5)
     send_request(orientation_rack_3)
     rack_attach(rack_list[2])
+    move_with_linear_x(1,0.1,-0.2)
     
 #  Drop Rack_3
     navigator.goToPose(goal_drop_br_3)
@@ -226,6 +261,7 @@ def main():
     navigator.goToPose(goal_drop_3)
     nav_reach(6)
     rack_detach(rack_list[2])
+    move_with_linear_x(2,0.1,0.0)
     
 
     navigator.lifecycleShutdown()
