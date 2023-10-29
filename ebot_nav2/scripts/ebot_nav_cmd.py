@@ -96,8 +96,8 @@ def main():
     goal_pick_1 = PoseStamped()
     goal_pick_1.header.frame_id = 'map'
     goal_pick_1.header.stamp = navigator.get_clock().now().to_msg()
-    goal_pick_1.pose.position.x = 0.946705
-    goal_pick_1.pose.position.y = 4.351706
+    goal_pick_1.pose.position.x = 0.108200
+    goal_pick_1.pose.position.y = 4.528524
     goal_pick_1.pose.orientation.x = 0.0
     goal_pick_1.pose.orientation.y = 0.0
     goal_pick_1.pose.orientation.z = 0.7077099
