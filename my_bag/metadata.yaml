@@ -1,0 +1,38 @@
+rosbag2_bagfile_information:
+  version: 5
+  storage_identifier: sqlite3
+  duration:
+    nanoseconds: 122637041058
+  starting_time:
+    nanoseconds_since_epoch: 1698602026833341967
+  message_count: 10444
+  topics_with_message_count:
+    - topic_metadata:
+        name: _timer_state
+        type: std_msgs/msg/String
+        serialization_format: cdr
+        offered_qos_profiles: ""
+      message_count: 1226
+    - topic_metadata:
+        name: _model_tf
+        type: gazebo_msgs/msg/ModelStates
+        serialization_format: cdr
+        offered_qos_profiles: ""
+      message_count: 520
+    - topic_metadata:
+        name: odom
+        type: geometry_msgs/msg/PoseStamped
+        serialization_format: cdr
+        offered_qos_profiles: ""
+      message_count: 8698
+  compression_format: ""
+  compression_mode: ""
+  relative_file_paths:
+    - my_bag_0.db3
+  files:
+    - path: my_bag_0.db3
+      starting_time:
+        nanoseconds_since_epoch: 1698602026833341967
+      duration:
+        nanoseconds: 122637041058
+      message_count: 10444

@@ -52,7 +52,7 @@ class MyRobotDockingController(Node):
         self.is_docking = False
         self.robot_pose = [0,0,0]         
         self.dock_aligned = False
-        self.kp = 1.0
+        self.kp = 0.7
         self.normalize_yaw_bot = 0
         self.normalize_yaw_rack = 0
         self.difference = 0
@@ -108,7 +108,7 @@ class MyRobotDockingController(Node):
 
             if self.orientation_dock:
                 if abs(self.difference) > 0.02:
-                    vel.angular.z = self.difference *0.6
+                    vel.angular.z = self.difference * self.kp
                     self.vel_pub.publish(vel)
                 else:
                     vel.angular.z = 0.0

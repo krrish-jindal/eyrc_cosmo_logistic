@@ -96,6 +96,9 @@ def move_with_linear_x(duration, linear_x, angular_z):
 
 
 
+def publish_vel_callback():
+    # Publish the Twist message to control the robot's movement
+    vel_pub.publish(vel_msg)
 
 def main():
     global client_docking, node ,attach ,detach, navigator ,vel_msg, vel_pub
@@ -109,6 +112,11 @@ def main():
     vel_msg = Twist()
     navigator = BasicNavigator()
 
+    publish_rate = 10  # Adjust this value as needed (e.g., 10 Hz)
+    timer_period = 1.0 / publish_rate  # Calculate the timer period in seconds
+    node.create_timer(timer_period, publish_vel_callback)
+
+    
     orientation_rack_1 = 3.139999
     orientation_rack_2 = -1.570000
     orientation_rack_3 = 1.569999
@@ -117,8 +125,8 @@ def main():
     goal_pick_1 = PoseStamped()
     goal_pick_1.header.frame_id = 'map'
     goal_pick_1.header.stamp = navigator.get_clock().now().to_msg()
-    goal_pick_1.pose.position.x = 0.108200
-    goal_pick_1.pose.position.y = 4.528524
+    goal_pick_1.pose.position.x = 0.946705
+    goal_pick_1.pose.position.y = 4.351706
     goal_pick_1.pose.orientation.x = 0.0
     goal_pick_1.pose.orientation.y = 0.0
     goal_pick_1.pose.orientation.z = 0.7077099
@@ -151,8 +159,8 @@ def main():
     goal_drop_1.pose.position.y = -2.455
     goal_drop_1.pose.orientation.x = 0.0
     goal_drop_1.pose.orientation.y = 0.0
-    goal_drop_1.pose.orientation.z = -0.9999832
-    goal_drop_1.pose.orientation.w = 0.0058028 
+    goal_drop_1.pose.orientation.z = -0.99997
+    goal_drop_1.pose.orientation.w =  0.00079 
 
     goal_drop_br_1 = PoseStamped()
     goal_drop_br_1.header.frame_id = 'map'
@@ -161,8 +169,8 @@ def main():
     goal_drop_br_1.pose.position.y = -2.330280
     goal_drop_br_1.pose.orientation.x = 0.0
     goal_drop_br_1.pose.orientation.y = 0.0
-    goal_drop_br_1.pose.orientation.z =  -0.9999832
-    goal_drop_br_1.pose.orientation.w = 0.0058028 
+    goal_drop_br_1.pose.orientation.z =  -0.9999787
+    goal_drop_br_1.pose.orientation.w = 0.0065288 
     
     goal_drop_2 = PoseStamped()
     goal_drop_2.header.frame_id = 'map'
@@ -223,8 +231,8 @@ def main():
     rack_attach(rack_list[0])
 
 # Drop Rack_1
-    # navigator.goToPose(goal_drop_br_1)
-    # nav_reach(2)
+    navigator.goToPose(goal_drop_br_1)
+    nav_reach(2)
     navigator.goToPose(goal_drop_1)
     nav_reach(2)
     rack_detach(rack_list[0])
