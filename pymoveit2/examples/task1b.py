@@ -164,9 +164,9 @@ class endf(Node):
 					self.moveit2.move_to_pose(position=[box1.transform.translation.x,box1.transform.translation.y,box1.transform.translation.z], quat_xyzw=[box1.transform.rotation.x, box1.transform.rotation.y, box1.transform.rotation.z, box1.transform.rotation.w], cartesian=True,tolerance_position = 0.01,tolerance_orientation=0.01)
 					self.moveit2.wait_until_executed()
 					print("+++++++++++++")
-					self.attach(str(1))
+					self.attach(str(box_no))
 					time.sleep(2)
-					self.attach(str(1))
+					self.attach(str(box_no))
 					flag=2
 					break
 
@@ -205,13 +205,13 @@ class endf(Node):
 						break
 					
 				elif round(box1.transform.rotation.z,2)> 0.6:
-					if (round(tool0.transform.translation.y,2) < 0.21):
+					if (round(tool0.transform.translation.y,2) < 0.23):
 						print("----3--------")
 						__twist_msg = TwistStamped()
 						__twist_msg.header.stamp = self.get_clock().now().to_msg()
 						__twist_msg.header.frame_id = ur5.base_link_name()
 						__twist_msg.twist.linear.z = 0.1
-						__twist_msg.twist.linear.y = -0.2
+						__twist_msg.twist.linear.y = -0.4
 						self.twist_pub.publish(__twist_msg)
 					else:
 						break
