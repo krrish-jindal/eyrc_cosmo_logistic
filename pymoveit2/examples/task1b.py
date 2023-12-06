@@ -161,8 +161,11 @@ class endf(Node):
 						pass
 					self.moveit2.move_to_pose(position=[box1.transform.translation.x,box1.transform.translation.y,box1.transform.translation.z], quat_xyzw=[box1.transform.rotation.x, box1.transform.rotation.y, box1.transform.rotation.z, box1.transform.rotation.w], cartesian=True,tolerance_position = 0.01,tolerance_orientation=0.01)
 					self.moveit2.wait_until_executed()
+
 					self.moveit2.move_to_pose(position=[box1.transform.translation.x,box1.transform.translation.y,box1.transform.translation.z], quat_xyzw=[box1.transform.rotation.x, box1.transform.rotation.y, box1.transform.rotation.z, box1.transform.rotation.w], cartesian=True,tolerance_position = 0.01,tolerance_orientation=0.01)
 					self.moveit2.wait_until_executed()
+					self.moveit2.wait_until_executed()
+
 					print("+++++++++++++")
 					self.attach(str(box_no))
 					time.sleep(2)
@@ -200,6 +203,7 @@ class endf(Node):
 						__twist_msg.header.frame_id = ur5.base_link_name()
 						__twist_msg.twist.linear.z = 0.1
 						__twist_msg.twist.linear.y = 0.2
+						__twist_msg.twist.linear.x = -0.4
 						self.twist_pub.publish(__twist_msg)
 					else:
 						break
@@ -288,10 +292,10 @@ def main():
 	joint_positions_final_3 = (enftf.get_parameter("joint_positions_final_3").get_parameter_value().double_array_value)
 
 	enftf.move_pose(str(1))
-	enftf.moveit2.move_to_configuration(joint_positions_initial)
-	enftf.moveit2.wait_until_executed()
-	enftf.moveit2.move_to_configuration(joint_positions_initial)
-	enftf.moveit2.wait_until_executed()
+	# enftf.moveit2.move_to_configuration(joint_positions_initial)
+	# enftf.moveit2.wait_until_executed()
+	# enftf.moveit2.move_to_configuration(joint_positions_initial)
+	# enftf.moveit2.wait_until_executed()
 	enftf.moveit2.move_to_configuration(joint_positions_final_1)
 	enftf.moveit2.wait_until_executed()
 	enftf.moveit2.move_to_configuration(joint_positions_final_1)
@@ -301,11 +305,11 @@ def main():
 	print("***********")
 
 
+	enftf.moveit2.move_to_configuration(joint_positions_initial)
+	enftf.moveit2.wait_until_executed()
 	enftf.move_pose(str(49))
-	enftf.moveit2.move_to_configuration(joint_positions_initial)
-	enftf.moveit2.wait_until_executed()
-	enftf.moveit2.move_to_configuration(joint_positions_initial)
-	enftf.moveit2.wait_until_executed()
+	# enftf.moveit2.move_to_configuration(joint_positions_initial)
+	# enftf.moveit2.wait_until_executed()
 	enftf.moveit2.move_to_configuration(joint_positions_final_2)
 	enftf.moveit2.wait_until_executed()
 	enftf.moveit2.move_to_configuration(joint_positions_final_2)
@@ -316,10 +320,10 @@ def main():
 
 
 	enftf.move_pose(str(3))
-	enftf.moveit2.move_to_configuration(joint_positions_initial)
-	enftf.moveit2.wait_until_executed()
-	enftf.moveit2.move_to_configuration(joint_positions_initial)
-	enftf.moveit2.wait_until_executed()
+	# enftf.moveit2.move_to_configuration(joint_positions_initial)
+	# enftf.moveit2.wait_until_executed()
+	# enftf.moveit2.move_to_configuration(joint_positions_initial)
+	# enftf.moveit2.wait_until_executed()
 	enftf.moveit2.move_to_configuration(joint_positions_final_3)
 	enftf.moveit2.wait_until_executed()
 	enftf.moveit2.move_to_configuration(joint_positions_final_3)
