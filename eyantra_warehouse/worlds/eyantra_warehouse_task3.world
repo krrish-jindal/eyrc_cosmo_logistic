@@ -10,7 +10,7 @@
 *  Filename:			eyantra_warehouse.world
 *  Created:				12/07/2023
 *  Last Modified:	12/09/2023
-*  Modified by:   Ravi
+*  Modified by:   Ravi, Jaison
 *  Author:				e-Yantra Team
 *  
 *****************************************************************************************
@@ -119,11 +119,11 @@
 	</include>
 
   <!-- NOISE BOX -->
-  <!-- <include>
+  <include>
       <uri>model://boxes/box_1</uri>
       <name>box1_dup</name>
       <pose>-4 -2.6 3 0 0 0</pose>
-	</include> -->
+	</include>
   <!-- NOISE BOX -->
 
 
@@ -131,13 +131,13 @@
   <include>
       <uri>model://rack</uri>
       <name>rack1</name>
-      <pose>1.05 -2.455 0.0 0 -0 3.14</pose>
+      <pose>1.26 4.35 0.1 0 -0 3.14</pose>
 	</include>
 
   <include>
       <uri>model://boxes/box_1</uri>
       <name>box1</name>
-      <pose>1.13 -2.455 0.89 0 0 0.0</pose>
+      <pose>1.33 4.35 1.35 0 -0 0</pose>
 	</include>
 
   <!-- RACK 1 -->
@@ -146,30 +146,26 @@
   <include>
       <uri>model://rack</uri>
       <name>rack2</name>
-      <pose>1.35 -1.755 0.0 0 0 1.57</pose>
+      <pose>2.03 3.30 0.1 0 -0 -1.57</pose>
 	</include>
 
-  <include>
-      <uri>model://boxes/box_3</uri>
-      <name>box3</name>
-      <pose>1.35 -1.865 0.51 0 0 -1.57</pose>
-	</include>
-
-  <include>
-      <uri>model://boxes/box_49</uri>
-      <name>box49</name>
-      <pose>1.35 -1.865 0.89 0 0 -1.57</pose>
-	</include>
   <!-- RACK 2 -->
 
   <!-- RACK 3 -->
   <include>
       <uri>model://rack</uri>
       <name>rack3</name>
-      <pose>1.35 -3.155 0.0 0 0 -1.57</pose>
+      <pose>2.03 -8.09 0.1 0 -0 1.57</pose>
 	</include>
-  <!-- RACK 3 -->
 
+   <include>
+      <uri>model://boxes/box_3</uri>
+      <name>box3</name>
+      <pose>2.03 -8.17 1.35 0 -0 -1.57</pose>
+	</include>
+
+  <!-- RACK 3 -->
+<!-- 
   <include>
       <uri>model://rack</uri>
       <name>rack4</name>
@@ -198,7 +194,7 @@
       <uri>model://rack</uri>
       <name>rack8</name>
       <pose>-3.24 4.28 0.1 0 -0 0.0</pose>
-	</include>
+	</include> -->
 
   <include>
       <uri>model://aws_robomaker_warehouse_ClutteringC_01</uri>
@@ -225,20 +221,13 @@
 	</include>
 
   <include>
-      <uri>model://drop_table</uri>
-      <name>drop_table</name>
+      <uri>model://table</uri>
+      <name>table</name>
       <pose>2.4 -2.45 0 0 -0 0.0</pose>
 	</include>
 
+  <plugin name="gazebo_link_attacher" filename="libgazebo_link_attacher.so"/>
   <plugin name="gazebo_link_ur5_attacher" filename="libgazebo_link_ur5_attacher.so"/>
-
-  <plugin name="gazebo_ros_state" filename="libgazebo_ros_state.so">
-      <ros>
-        <namespace>/_makeit</namespace>
-      </ros>
-
-      <update_rate>1.0</update_rate>
-  </plugin>
 
   </world>
 </sdf>
