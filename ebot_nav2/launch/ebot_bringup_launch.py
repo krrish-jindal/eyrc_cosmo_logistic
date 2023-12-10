@@ -38,7 +38,7 @@ def generate_launch_description():
     bringup_dir = get_package_share_directory('nav2_bringup')
     launch_dir = os.path.join(bringup_dir, 'launch')
     ebot_nav2_dir = get_package_share_directory('ebot_nav2')
-    description_dir = get_package_share_directory('ebot_description')
+    description_dir = get_package_share_directory('eyantra_warehouse')
 
     namespace = LaunchConfiguration('namespace')
     use_namespace = LaunchConfiguration('use_namespace')
