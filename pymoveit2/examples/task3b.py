@@ -71,6 +71,7 @@ class endf(Node):
         self.gripper_control_off = self.create_client(DetachLink, '/GripperMagnetOFF')
         self.callback_group = ReentrantCallbackGroup()
         self.pz = 0
+        self.last_obj = "None"
 
         self.moveit2 = MoveIt2(
         node=self,
@@ -152,40 +153,11 @@ class endf(Node):
             if "obj" in data.transforms[0].child_frame_id:
                 self.obj_aruco = data.transforms[0].child_frame_id
 
-
     def servo(self, box_no):
         while rclpy.ok():
             try:
                 tool0 = self.tf_buffer.lookup_transform('base_link', "tool0", rclpy.time.Time())
                 box49 = self.tf_buffer.lookup_transform('base_link', f"obj_{box_no}", rclpy.time.Time())
-                
-
-
-                # while rclpy.ok():
-                # 	try:
-                # 		tool0 = enftf.tf_buffer.lookup_transform('base_link', "tool0", rclpy.time.Time())
-                # 		box49 = enftf.tf_buffer.lookup_transform('base_link', "obj_49", rclpy.time.Time())
-                # 	except:
-                # 		pass
-
-
-                # 	roll_box , pitch_box, yaw_box = tf_transformations.euler_from_quaternion([box49.transform.rotation.x, box49.transform.rotation.y, box49.transform.rotation.z, box49.transform.rotation.w])
-                # 	print(yaw_box)
-                # 	roll_tool , pitch_tool, yaw_tool = tf_transformations.euler_from_quaternion([tool0.transform.rotation.x, tool0.transform.rotation.y, tool0.transform.rotation.z, tool0.transform.rotation.w])
-
-                # 	print(f"y ={round((yaw_tool) - (yaw_box),4)}")
-
-                # 	if round((yaw_tool) - (yaw_box),4) < 0.003:
-                # 		__twist_msg = TwistStamped()
-                # 		__twist_msg.header.stamp = enftf.get_clock().now().to_msg()
-                # 		__twist_msg.header.frame_id = ur5.base_link_name()
-                # 		__twist_msg.twist.angular.z = round((yaw_tool) - (yaw_box),4) *2
-                # 		__twist_pub.publish(__twist_msg)
-                # 	else:
-                # 		break
-
-
-
 
                 while rclpy.ok():
                     try:
@@ -314,34 +286,13 @@ def main():
     quat_xyzw_r2 = [0, 0, 0.7068252, 0.7073883]
     position_r3 = [0.25,0.74,0.17]
     quat_xyzw_r3 = [0, 0, -0.7068252, 0.7073883]
-    # position_b1 = [0.25,-0.57,0.18]
-    # quat_xyzw_b1 = [0, 0, 0.7068252, 0.7073883]
-    # position_b2 = [0.25,-0.57,0.55]
-    # quat_xyzw_b2 = [-0.0000221, 0.001126, 0.6931103, 0.7208306]
-    # position_b3 = [0.45,0.06,0.55]
-    # quat_xyzw_b3 = [0, 0, 0.9999997, 0.0007963]
+
     rack_pos = [position_r1,position_r2,position_r3]
     rack_quat = [quat_xyzw_r1,quat_xyzw_r2,quat_xyzw_r3]
 
     pos_b = [-0.20, 0, -0.26]
     quat_b= [0, 0, 1, 0.000796327]
     base_pos=[pos_b,quat_b]
-    # box_pos = [position_b1,position_b2,position_b3]
-    # box_quat = [quat_xyzw_b1,quat_xyzw_b2,quat_xyzw_b3]
-    #check if exists
-
-    # if not path.exists(filepath1):
-    #     node.get_logger().error(f"File '{filepath1}' does not exist")
-    #     rclpy.shutdown()
-    #     exit(1)
-    # if not path.exists(filepath2):
-    #     node.get_logger().error(f"File '{filepath2}' does not exist")
-    #     rclpy.shutdown()
-    #     exit(1)
-
-    mesh_id1 = path.basename(filepath1).split(".")[0]
-    mesh_id2 = path.basename(filepath2).split(".")[0]
-    mesh_box_id = ["box_1","box_2","box_3"]
     mesh_rack_id = ["rack_1","rack_2","rack_3"]
     joint_positions_initial = (enftf.get_parameter("joint_positions_initial").get_parameter_value().double_array_value)
     joint_positions_positive = (enftf.get_parameter("joint_positions_positive").get_parameter_value().double_array_value)
@@ -354,11 +305,7 @@ def main():
                 filepath=filepath1, id=mesh_rack_id[i], position=rack_pos[i], quat_xyzw=rack_quat[i], frame_id=ur5.base_link_name()
             )
             time.sleep(2)
-            # print(filepath1)
-            # moveit2.add_collision_mesh(
-            #     filepath=filepath2, id=mesh_box_id[i], position=box_pos[i], quat_xyzw=box_quat[i], frame_id=ur5.base_link_name()
-            # )
-            # time.sleep(2)
+
     enftf.moveit2.add_collision_mesh(
     filepath=filepath2, id="base", position=base_pos[0], quat_xyzw=base_pos[1], frame_id=ur5.base_link_name())
     
@@ -369,7 +316,9 @@ def main():
             box = enftf.tf_buffer.lookup_transform('base_link', enftf.obj_aruco, rclpy.time.Time())
             roll , pitch , yaw  = euler_from_quaternion([box.transform.rotation.x, box.transform.rotation.y, box.transform.rotation.z, box.transform.rotation.w])
             print(yaw)
-            if round(yaw) == 0:
+            if enftf.last_obj == obj:
+                pass
+            elif round(yaw) == 0:
                 enftf.moveit2.move_to_configuration(joint_positions_negative)
                 enftf.moveit2.wait_until_executed()
                 enftf.servo(obj)
@@ -385,28 +334,10 @@ def main():
                 enftf.servo(obj)
                 enftf.moveit2.move_to_configuration(joint_positions_initial)
                 enftf.moveit2.wait_until_executed()
-            elif obj == "None":
-                pass
+            enftf.last_obj = obj
+
         except Exception as e:
             print(e)
 
-
-
-
-
-    # enftf.servo(str(1))
-
-    # enftf.moveit2.move_to_configuration(joint_positions_initial)
-    # enftf.moveit2.wait_until_executed()
-    # enftf.moveit2.move_to_configuration(joint_positions_positive)
-    # enftf.moveit2.wait_until_executed()
-    # enftf.servo(str(49))
-
-    # enftf.moveit2.move_to_configuration(joint_positions_initial)
-    # enftf.moveit2.wait_until_executed()
-    # enftf.moveit2.move_to_configuration(joint_positions_negative)
-    # enftf.moveit2.wait_until_executed()
-    # enftf.servo(str(3))
-	
 if __name__ == "__main__":
 	main()
