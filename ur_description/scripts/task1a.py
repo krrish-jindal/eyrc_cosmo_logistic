@@ -45,6 +45,7 @@ from sensor_msgs.msg import CompressedImage, Image
 from cv2 import aruco
 from builtin_interfaces.msg import Time
 from geometry_msgs.msg import Quaternion
+from tf_transformations import euler_from_quaternion
 from tf_transformations import quaternion_from_euler
 import tf_transformations
 
@@ -197,8 +198,8 @@ class aruco_tf(Node):
 		self.depth_image = None
 		############ Topic SUBSCRIPTIONS ############
 
-		self.color_cam_sub = self.create_subscription(Image, '/camera/color/image_raw2', self.colorimagecb, 10)
-		self.depth_cam_sub = self.create_subscription(Image, '/camera/aligned_depth_to_color/image_raw2', self.depthimagecb, 10)
+		self.color_cam_sub = self.create_subscription(Image, '/camera/color/image_raw', self.colorimagecb, 10)
+		self.depth_cam_sub = self.create_subscription(Image, '/camera/aligned_depth_to_color/image_raw', self.depthimagecb, 10)
 
 		############ Constructor VARIABLES/OBJECTS ############
 
@@ -292,7 +293,7 @@ class aruco_tf(Node):
 			angle_aruco = angle_list[i]
 			width_aruco = width_list[i]
 			center=center_list[i]
-			print(angle_aruco)
+			# print(angle_aruco)
 			angle_aruco = ((0.788*angle_aruco[2]) - ((angle_aruco[2]**2)/3160))
 			if round(angle_aruco) == 0:
 				angle_aruco = (angle_aruco) + math.pi
@@ -300,7 +301,7 @@ class aruco_tf(Node):
 			else:
 				roll, pitch, yaw = 0, -0.261, angle_aruco
 
-			print(angle_aruco)
+			# print(angle_aruco)
 
 			rpy.append(roll)
 			rpy.append(pitch)
@@ -367,6 +368,9 @@ class aruco_tf(Node):
 				transform_msg.transform.rotation.y = t.transform.rotation.y
 				transform_msg.transform.rotation.z = t.transform.rotation.z
 				transform_msg.transform.rotation.w = t.transform.rotation.w
+				roll_1 , pitch_1 , yaw_1  = euler_from_quaternion([t.transform.rotation.x, t.transform.rotation.y, t.transform.rotation.z, t.transform.rotation.w])
+				print(aruco_id)
+				print(yaw_1)
 				self.br.sendTransform(transform_msg)
 			except:
 				pass
