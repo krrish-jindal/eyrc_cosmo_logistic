@@ -22,6 +22,7 @@ endif()
 install(PROGRAMS
   scripts/task1a.py
   scripts/armed/spawner_box_com.py
+  scripts/test.py
   DESTINATION lib/${PROJECT_NAME}
 )
 

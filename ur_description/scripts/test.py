@@ -106,13 +106,13 @@ def detect_aruco(image, depth):
 
 		# We are using 150x150 aruco marker size
 		size_of_aruco_cm = 15
-		dictionary = cv2.aruco.getPredefinedDictionary(cv2.aruco.DICT_4X4_250)
+		dictionary = cv2.aruco.getPredefinedDictionary(cv2.aruco.DICT_4X4_50)
 
 		# arucoDict = cv2.aruco.Dictionary_get(cv2.aruco.DICT_4X4_50)
 		arucoParams = cv2.aruco.DetectorParameters()
 		brightness = 10 
 		contrast = 2.3  
-		image = cv2.addWeighted(image, contrast, np.zeros(image.shape, image.dtype), 0, brightness)
+		image = cv2.addWeighted(image, contrast, np.zeros(image.shape, image.dtype), 0, brightness) 
 		image = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
 		try:
 			(corners, aruco_id, rejected) = cv2.aruco.detectMarkers(image, dictionary, parameters=arucoParams)
@@ -137,10 +137,10 @@ def detect_aruco(image, depth):
 					# center_aruco = current_tvec.squeeze()
 					center_aruco = np.mean(corners[i][0], axis=0)
 					center_x, center_y = map(int, center_aruco)
-					distance_from_rgb = cv2.norm(current_tvec)
+					# distance_from_rgb = cv2.norm(current_tvec)
 					center_aruco_list.append((center_x,center_y))
-					depth_data = depth[center_y, center_x]
-					distance_from_rgb_list.append(depth_data)
+					# depth_data = depth[center_y, center_x]
+					# distance_from_rgb_list.append(depth_data)
 
 					#  Angle cal
 					list_1 = current_rvec.tolist()
@@ -156,6 +156,7 @@ def detect_aruco(image, depth):
 					# cv2.putText(image, f"{angle_aruco_list[i]}", (int(center_x), int(center_y)), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 0, 255), 2)
 					cv2.drawFrameAxes(image,cam_mat, dist_mat, current_rvec[0] , current_tvec[0],2,1)	
 					cv2.circle(image, (center_x ,center_y), 2, (255, 0, 0), 6)
+					print(aruco_id[i])
 			cv2.imshow("Aruco Detection", image)
 			cv2.waitKey(1)  # Wait for 1ms
 		
@@ -172,9 +173,9 @@ def detect_aruco(image, depth):
 			############################################	
 			# cv2.destroyAllWindows()
 			return center_aruco_list, distance_from_rgb_list, angle_aruco_list, width_aruco_list, ids, tvec
+
 		except:
 			pass
-
 ##################### CLASS DEFINITION #######################
 
 class aruco_tf(Node):
@@ -197,8 +198,8 @@ class aruco_tf(Node):
 		self.depth_image = None
 		############ Topic SUBSCRIPTIONS ############
 
-		self.color_cam_sub = self.create_subscription(Image, '/camera/color/image_raw2', self.colorimagecb, 10)
-		self.depth_cam_sub = self.create_subscription(Image, '/camera/aligned_depth_to_color/image_raw2', self.depthimagecb, 10)
+		self.color_cam_sub = self.create_subscription(Image, '/camera/color/image_raw', self.colorimagecb, 10)
+		self.depth_cam_sub = self.create_subscription(Image, '/camera/aligned_depth_to_color/image_raw', self.depthimagecb, 10)
 
 		############ Constructor VARIABLES/OBJECTS ############
 
@@ -288,7 +289,7 @@ class aruco_tf(Node):
 		# Add your image processing code here
 		for i in range(len(ids)):
 			aruco_id = ids[i]
-			distance = distance_list[i]
+			# distance = distance_list[i]
 			angle_aruco = angle_list[i]
 			width_aruco = width_list[i]
 			center=center_list[i]
@@ -337,39 +338,39 @@ class aruco_tf(Node):
 			x = tvec[i][0][0]
 			y = tvec[i][0][1]
 			z = tvec[i][0][2]
-			y_1 = distance/1000 * (sizeCamX - center_list[i][0] - centerCamX) / focalX
-			z_1 = distance/1000 * (sizeCamY - center_list[i][1] - centerCamY) / focalY
-			x_1 = distance/1000
+			# y_1 = distance/1000 * (sizeCamX - center_list[i][0] - centerCamX) / focalX
+			# z_1 = distance/1000 * (sizeCamY - center_list[i][1] - centerCamY) / focalY
+			# x_1 = distance/1000
 
-			transform_msg = TransformStamped()
-			transform_msg.header.stamp = self.get_clock().now().to_msg()
-			transform_msg.header.frame_id = 'camera_link'
-			transform_msg.child_frame_id = f'cam_{aruco_id}'
-			transform_msg.transform.translation.x = x_1
-			transform_msg.transform.translation.y = y_1
-			transform_msg.transform.translation.z = z_1
-			transform_msg.transform.rotation.x = qx
-			transform_msg.transform.rotation.y = qy
-			transform_msg.transform.rotation.z = qz
-			transform_msg.transform.rotation.w = qw
-			self.br.sendTransform(transform_msg)
+			# transform_msg = TransformStamped()
+			# transform_msg.header.stamp = self.get_clock().now().to_msg()
+			# transform_msg.header.frame_id = 'camera_link'
+			# transform_msg.child_frame_id = f'cam_{aruco_id}'
+			# transform_msg.transform.translation.x = x_1
+			# transform_msg.transform.translation.y = y_1
+			# transform_msg.transform.translation.z = z_1
+			# transform_msg.transform.rotation.x = qx
+			# transform_msg.transform.rotation.y = qy
+			# transform_msg.transform.rotation.z = qz
+			# transform_msg.transform.rotation.w = qw
+			# self.br.sendTransform(transform_msg)
 
-			try:
-				t = self.tf_buffer.lookup_transform('base_link', transform_msg.child_frame_id, rclpy.time.Time())
-				transform_msg.header.stamp = self.get_clock().now().to_msg()
+			# try:
+			# 	t = self.tf_buffer.lookup_transform('base_link', transform_msg.child_frame_id, rclpy.time.Time())
+			# 	transform_msg.header.stamp = self.get_clock().now().to_msg()
 
-				transform_msg.header.frame_id = 'base_link'
-				transform_msg.child_frame_id = f'obj_{aruco_id}'
-				transform_msg.transform.translation.x = t.transform.translation.x
-				transform_msg.transform.translation.y = t.transform.translation.y
-				transform_msg.transform.translation.z = t.transform.translation.z
-				transform_msg.transform.rotation.x = t.transform.rotation.x
-				transform_msg.transform.rotation.y = t.transform.rotation.y
-				transform_msg.transform.rotation.z = t.transform.rotation.z
-				transform_msg.transform.rotation.w = t.transform.rotation.w
-				self.br.sendTransform(transform_msg)
-			except:
-				pass
+			# 	transform_msg.header.frame_id = 'base_link'
+			# 	transform_msg.child_frame_id = f'obj_{aruco_id}'
+			# 	transform_msg.transform.translation.x = t.transform.translation.x
+			# 	transform_msg.transform.translation.y = t.transform.translation.y
+			# 	transform_msg.transform.translation.z = t.transform.translation.z
+			# 	transform_msg.transform.rotation.x = t.transform.rotation.x
+			# 	transform_msg.transform.rotation.y = t.transform.rotation.y
+			# 	transform_msg.transform.rotation.z = t.transform.rotation.z
+			# 	transform_msg.transform.rotation.w = t.transform.rotation.w
+			# 	self.br.sendTransform(transform_msg)
+			# except:
+			# 	pass
 
 
 		############ ADD YOUR CODE HERE ############
