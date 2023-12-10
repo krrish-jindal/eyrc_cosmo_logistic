@@ -150,7 +150,7 @@ def generate_launch_description():
 
     sim_launch = IncludeLaunchDescription(
         PythonLaunchDescriptionSource(
-            os.path.join(description_dir, 'launch', 'ebot_gazebo_launch.py')))
+            os.path.join(description_dir, 'launch', 'task3a.launch.py')))
     
     bringup_cmd_group = GroupAction([
         PushRosNamespace(
