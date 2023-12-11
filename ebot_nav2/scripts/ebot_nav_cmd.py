@@ -98,7 +98,6 @@ def main():
     positions = data_dict['position']
     rack1_coordinates = positions[0]['rack1']
     package_id = data_dict['package_id'][0]
-    print("CONFIG_PATH",package_id)
    
 
     node = rclpy.create_node("nav_dock")
@@ -115,7 +114,7 @@ def main():
     orientation_rack_1 = 3.139999
     orientation_rack_2 = -1.570000
     orientation_rack_3 = 1.569999
-    rack_list=["rack1","Rack2","Rack3"]
+    rack_list=["rack1","rack2","rack3"]
 
     goal_pick_1 = PoseStamped()
     goal_pick_1.header.frame_id = 'map'
@@ -177,53 +176,44 @@ def main():
     goal_drop_3.pose.orientation.z =  0.6921004
     goal_drop_3.pose.orientation.w = 0.7218012 
     navigator.waitUntilNav2Active()
-    print("POSS",f"goal_pick_{package_id}")
+    print("ID",f"goal_pick_{package_id}")
+
 # Pick Rack_1
     if package_id ==3:
         navigator.goToPose(goal_pick_3)
         nav_reach(3)
         send_request(orientation_rack_3)
         rack_attach(rack_list[2])
+
+    #   Drop Rack_3
+        navigator.goToPose(goal_drop_3)
+        nav_reach(6)
+        rack_detach(rack_list[2])
+
+        
     elif package_id ==2:
         navigator.goToPose(goal_pick_2)
         nav_reach(2)
         send_request(orientation_rack_2)
         rack_attach(rack_list[1])
+
+    # Drop Rack_2
+        navigator.goToPose(goal_drop_2)
+        nav_reach(4)
+        rack_detach(rack_list[1])
     else:
         navigator.goToPose(goal_pick_1)
         nav_reach(1)
         send_request(orientation_rack_1)
         rack_attach(rack_list[0])
 
-# Drop Rack_1
-    navigator.goToPose(goal_drop_1)
-    nav_reach(2)
-    rack_detach(rack_list[0])
+    # Drop Rack_1
 
-# Pick Rack_2
-    # navigator.goToPose(goal_pick_2)
-    # nav_reach(3)
-    # send_request(orientation_rack_2)
-    # rack_attach(rack_list[1])
-
-#  Drop Rack_2
-#     navigator.goToPose(goal_drop_2)
-#     nav_reach(4)
-#     rack_detach(rack_list[1])
-
-
-# # Pick Rack_3
-#     navigator.goToPose(goal_pick_3)
-#     nav_reach(5)
-#     send_request(orientation_rack_3)
-#     rack_attach(rack_list[2])
+        navigator.goToPose(goal_drop_1)
+        nav_reach(2)
+        rack_detach(rack_list[0])
+ 
     
-# #  Drop Rack_3
-#     navigator.goToPose(goal_drop_3)
-#     nav_reach(6)
-#     rack_detach(rack_list[2])
-    
-
     navigator.lifecycleShutdown()
 
     exit(0)
