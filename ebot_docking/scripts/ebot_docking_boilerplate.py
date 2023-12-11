@@ -19,7 +19,7 @@ from rclpy.executors import MultiThreadedExecutor
 from tf_transformations import euler_from_quaternion
 from ebot_docking.srv import DockSw  # Import custom service message
 import math, statistics
-
+import time
 # Define a class for your ROS2 node
 class MyRobotDockingController(Node):
 
@@ -52,7 +52,7 @@ class MyRobotDockingController(Node):
         self.is_docking = False
         self.robot_pose = [0,0,0]         
         self.dock_aligned = False
-        self.kp = 0.7
+        self.kp = 1.0
         self.normalize_yaw_bot = 0
         self.normalize_yaw_rack = 0
         self.difference = 0
@@ -92,19 +92,23 @@ class MyRobotDockingController(Node):
     def controller_loop(self):
         vel = Twist()
 
+
+
         # The controller loop manages the robot's linear and angular motion 
         # control to achieve docking alignment and execution
         if self.is_docking:
-            
+  
+
             # ...
             # Implement control logic here for linear and angular motion
             # For example P-controller is enough, what is P-controller go check it out !
             # ...
+            print("After")
             self.difference = self.normalize_yaw_rack - self.normalize_yaw_bot
-            print(self.usrleft_value)
-            if self.orientation_dock:
+
+            if self.orientation_dock == True:
                 if abs(self.difference) > 0.02:
-                    vel.angular.z = self.difference * self.kp
+                    vel.angular.z = self.difference *0.6
                     self.vel_pub.publish(vel)
                 else:
                     vel.angular.z = 0.0
@@ -114,10 +118,38 @@ class MyRobotDockingController(Node):
                     print("successfully oriented")
             elif self.linear_dock == False:
                 print("-----------------")
-                if self.usrleft_value > 0.15:
-                    print("+++++++++++++++")
+                print("L-",self.usrleft_value,"R-",self.usrright_value)
+                print("Diff---",self.difference)
+                self.diff=self.usrleft_value-self.usrright_value
+
+                if self.usrleft_value > 0.15 and round(self.usrright_value,1) != round(self.usrleft_value,1):
+                    if abs(self.difference)<=0.02:
+                        print(">>>>>=====>>>>>>")
+                        vel.angular.z = 0.5 
+
+                        self.vel_pub.publish(vel)
+                    else:
+                        vel.angular.z = -0.5
+                        vel.linear.x = -0.2
+
+                        self.vel_pub.publish(vel)
+
+ 
+                    print(">>>>>>>>>>>>>>>")
+                    # vel.linear.x = -self.usrleft_value * 0.4
+                    self.orientation_dock = False
+                    self.linear_dock = False
+
+
+                elif self.usrleft_value > 0.15 and round(self.usrright_value,1) == round(self.usrleft_value,1):
+                    print("===============")
+                    self.orientation_dock = False
                     vel.linear.x = -self.usrleft_value * 0.4
+                    vel.angular.z = 0.0
                     self.vel_pub.publish(vel)
+                    self.linear_dock = False
+
+
                 else:
                     vel.linear.x = 0.0
                     self.vel_pub.publish(vel)
@@ -149,20 +181,17 @@ class MyRobotDockingController(Node):
 
         # Log a message indicating that docking has started
         self.get_logger().info("Docking started!")
-
         # Create a rate object to control the loop frequency
-        rate = self.create_rate(2, self.get_clock())
+        self.rate = self.create_rate(2, self.get_clock())
 
         # Wait until the robot is aligned for docking
         while not self.dock_aligned:
             self.normalize_yaw_rack = self.normalize_angle(self.orientation)
             self.normalize_yaw_bot = self.normalize_angle(self.robot_pose[2])
             self.is_docking = True
-            self.linear_dock = True
-            self.orientation_dock = True
             self.get_logger().info("Waiting for alignment...")
             self.controller_loop()
-            rate.sleep()
+            self.rate.sleep()
 
         # Set the service response indicating success
         response.success = True
