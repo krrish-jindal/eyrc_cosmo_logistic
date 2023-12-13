@@ -153,6 +153,7 @@ class MyRobotDockingController(Node):
                 else:
                     vel.linear.x = 0.0
                     self.vel_pub.publish(vel)
+                    print("docking done")
                     self.linear_dock = True
                     self.is_docking = False
                     self.dock_aligned = True
