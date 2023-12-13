@@ -99,8 +99,11 @@ class NavigationController(Node):
             error = goal_pick.pose.position.x - self.robot_pose[0]
             self.vel_msg.linear.x = error * 2
             self.vel_pub.publish(self.vel_msg)
+
         self.vel_msg.linear.x = 0.0
         self.vel_pub.publish(self.vel_msg)
+
+        print("POSE----",self.robot_pose)
         self.send_request(orientation_rack)
         self.rack_attach(rack)
 
@@ -154,12 +157,56 @@ class NavigationController(Node):
         goal_drop_1.pose.orientation.z = 0.9999997
         goal_drop_1.pose.orientation.w = 0.0007963
 
+
+
+        goal_pick_2 = PoseStamped()
+        goal_pick_2.header.frame_id = 'map'
+        goal_pick_2.pose.position.x = 1.960219
+        goal_pick_2.pose.position.y = 2.118804
+        goal_pick_2.pose.orientation.x = 0.0
+        goal_pick_2.pose.orientation.y = 0.0
+        goal_pick_2.pose.orientation.z = 0.0
+        goal_pick_2.pose.orientation.w = 1.0
+
+        goal_pick_3 = PoseStamped()
+        goal_pick_3.header.frame_id = 'map'
+        goal_pick_3.header.stamp = self.navigator.get_clock().now().to_msg()
+        goal_pick_3.pose.position.x = 1.998759
+        goal_pick_3.pose.position.y = -7.102119
+        goal_pick_3.pose.orientation.x = 0.0
+        goal_pick_3.pose.orientation.y = 0.0
+        goal_pick_3.pose.orientation.z = 0.0
+        goal_pick_3.pose.orientation.w = 1.0
+
+
+
+        goal_drop_2 = PoseStamped()
+        goal_drop_2.header.frame_id = 'map'
+        goal_drop_2.header.stamp = self.navigator.get_clock().now().to_msg()
+        goal_drop_2.pose.position.x = 1.650000
+        goal_drop_2.pose.position.y = -3.684832
+        goal_drop_2.pose.orientation.x = 0.0
+        goal_drop_2.pose.orientation.y = 0.0
+        goal_drop_2.pose.orientation.z =  -0.70398
+        goal_drop_2.pose.orientation.w =  0.7102198
+
+        goal_drop_3 = PoseStamped()
+        goal_drop_3.header.frame_id = 'map'
+        goal_drop_3.header.stamp = self.navigator.get_clock().now().to_msg()
+        goal_drop_3.pose.position.x =1.550000
+        goal_drop_3.pose.position.y = -1.298586
+        goal_drop_3.pose.orientation.x = 0.0
+        goal_drop_3.pose.orientation.y = 0.0
+        goal_drop_3.pose.orientation.z =  0.6921004
+        goal_drop_3.pose.orientation.w = 0.7218012 
+
+
         # Define other drop goals...
 
         self.navigator.waitUntilNav2Active()
 
         if package_id == 3:
-            self.navigate_and_dock(goal_pick_1, goal_drop_1, orientation_rack_1, rack_list[0])
+            self.navigate_and_dock(goal_pick_3, goal_drop_3, orientation_rack_3, rack_list[2])
         elif package_id == 2:
             # Navigate for package_id 2
             pass
