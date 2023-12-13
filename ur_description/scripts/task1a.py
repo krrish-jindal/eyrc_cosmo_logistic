@@ -110,12 +110,13 @@ def detect_aruco(image, depth):
 		dictionary = cv2.aruco.getPredefinedDictionary(cv2.aruco.DICT_4X4_250)
 
 		# arucoDict = cv2.aruco.Dictionary_get(cv2.aruco.DICT_4X4_50)
-		arucoParams = cv2.aruco.DetectorParameters()
-		brightness = 10 
-		contrast = 2.3  
-		image = cv2.addWeighted(image, contrast, np.zeros(image.shape, image.dtype), 0, brightness)
-		image = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
+
 		try:
+			arucoParams = cv2.aruco.DetectorParameters()
+			brightness = 10 
+			contrast = 2.3  
+			image = cv2.addWeighted(image, contrast, np.zeros(image.shape, image.dtype), 0, brightness)
+			image = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
 			(corners, aruco_id, rejected) = cv2.aruco.detectMarkers(image, dictionary, parameters=arucoParams)
 			for i in range(len(aruco_id)):
 
@@ -283,97 +284,100 @@ class aruco_tf(Node):
 		focalX = 931.1829833984375
 		focalY = 931.1829833984375
 		
-		center_list, distance_list, angle_list, width_list, ids,tvec = detect_aruco(self.cv_image, self.depth_image)
-		rpy = []
-		list_rpy = []
-		# Add your image processing code here
-		for i in range(len(ids)):
-			aruco_id = ids[i]
-			distance = distance_list[i]
-			angle_aruco = angle_list[i]
-			width_aruco = width_list[i]
-			center=center_list[i]
-			# print(angle_aruco)
-			angle_aruco = ((0.788*angle_aruco[2]) - ((angle_aruco[2]**2)/3160))
-			if round(angle_aruco) == 0:
-				angle_aruco = (angle_aruco) + math.pi
-				roll, pitch, yaw = 0.4, 0, angle_aruco
-			else:
-				roll, pitch, yaw = 0, -0.261, angle_aruco
-
-			# print(angle_aruco)
-
-			rpy.append(roll)
-			rpy.append(pitch)
-			rpy.append(yaw)
-			list_rpy.append(rpy)
-			rpy_np = np.array(list_rpy)
-			rot_mat, _ = cv2.Rodrigues(rpy_np)
-
-			transform_matrix = np.array([[0, 0, 1],
-                                  [-1, 0, 0],
-                                  [0, 1, 0]])
-			
-			good_mat = np.dot(rot_mat, transform_matrix)
-
-			euler_good = tf_transformations.euler_from_matrix(good_mat)
-
-			euler_list = euler_good
-			roll = euler_list[0]
-			pitch = euler_list[1]
-			yaw = euler_list[2]
-			list_rpy = []
+		try:
+			center_list, distance_list, angle_list, width_list, ids,tvec = detect_aruco(self.cv_image, self.depth_image)
 			rpy = []
+			list_rpy = []
+			# Add your image processing code here
+			for i in range(len(ids)):
+				aruco_id = ids[i]
+				distance = distance_list[i]
+				angle_aruco = angle_list[i]
+				width_aruco = width_list[i]
+				center=center_list[i]
+				# print(angle_aruco)
+				angle_aruco = ((0.788*angle_aruco[2]) - ((angle_aruco[2]**2)/3160))
+				if round(angle_aruco) == 0:
+					angle_aruco = (angle_aruco) + math.pi
+					roll, pitch, yaw = 0.4, 0, angle_aruco
+				else:
+					roll, pitch, yaw = 0, -0.261, angle_aruco
 
-			q_rot = quaternion_from_euler(roll,pitch,yaw)
+				# print(angle_aruco)
 
-			r = R.from_euler('xyz', [roll, pitch, yaw], degrees=True)
-			quaternion = r.as_quat()
+				rpy.append(roll)
+				rpy.append(pitch)
+				rpy.append(yaw)
+				list_rpy.append(rpy)
+				rpy_np = np.array(list_rpy)
+				rot_mat, _ = cv2.Rodrigues(rpy_np)
 
-			qy = q_rot[1]
-			qz = q_rot[2]
-			qx = q_rot[0]
-			qw = q_rot[3]
+				transform_matrix = np.array([[0, 0, 1],
+									[-1, 0, 0],
+									[0, 1, 0]])
+				
+				good_mat = np.dot(rot_mat, transform_matrix)
 
-			x = tvec[i][0][0]
-			y = tvec[i][0][1]
-			z = tvec[i][0][2]
-			y_1 = distance/1000 * (sizeCamX - center_list[i][0] - centerCamX) / focalX
-			z_1 = distance/1000 * (sizeCamY - center_list[i][1] - centerCamY) / focalY
-			x_1 = distance/1000
+				euler_good = tf_transformations.euler_from_matrix(good_mat)
 
-			transform_msg = TransformStamped()
-			transform_msg.header.stamp = self.get_clock().now().to_msg()
-			transform_msg.header.frame_id = 'camera_link'
-			transform_msg.child_frame_id = f'cam_{aruco_id}'
-			transform_msg.transform.translation.x = x_1
-			transform_msg.transform.translation.y = y_1
-			transform_msg.transform.translation.z = z_1
-			transform_msg.transform.rotation.x = qx
-			transform_msg.transform.rotation.y = qy
-			transform_msg.transform.rotation.z = qz
-			transform_msg.transform.rotation.w = qw
-			self.br.sendTransform(transform_msg)
+				euler_list = euler_good
+				roll = euler_list[0]
+				pitch = euler_list[1]
+				yaw = euler_list[2]
+				list_rpy = []
+				rpy = []
 
-			try:
-				t = self.tf_buffer.lookup_transform('base_link', transform_msg.child_frame_id, rclpy.time.Time())
+				q_rot = quaternion_from_euler(roll,pitch,yaw)
+
+				r = R.from_euler('xyz', [roll, pitch, yaw], degrees=True)
+				quaternion = r.as_quat()
+
+				qy = q_rot[1]
+				qz = q_rot[2]
+				qx = q_rot[0]
+				qw = q_rot[3]
+
+				x = tvec[i][0][0]
+				y = tvec[i][0][1]
+				z = tvec[i][0][2]
+				y_1 = distance/1000 * (sizeCamX - center_list[i][0] - centerCamX) / focalX
+				z_1 = distance/1000 * (sizeCamY - center_list[i][1] - centerCamY) / focalY
+				x_1 = distance/1000
+
+				transform_msg = TransformStamped()
 				transform_msg.header.stamp = self.get_clock().now().to_msg()
-
-				transform_msg.header.frame_id = 'base_link'
-				transform_msg.child_frame_id = f'obj_{aruco_id}'
-				transform_msg.transform.translation.x = t.transform.translation.x
-				transform_msg.transform.translation.y = t.transform.translation.y
-				transform_msg.transform.translation.z = t.transform.translation.z
-				transform_msg.transform.rotation.x = t.transform.rotation.x
-				transform_msg.transform.rotation.y = t.transform.rotation.y
-				transform_msg.transform.rotation.z = t.transform.rotation.z
-				transform_msg.transform.rotation.w = t.transform.rotation.w
-				roll_1 , pitch_1 , yaw_1  = euler_from_quaternion([t.transform.rotation.x, t.transform.rotation.y, t.transform.rotation.z, t.transform.rotation.w])
-				print(aruco_id)
-				print(yaw_1)
+				transform_msg.header.frame_id = 'camera_link'
+				transform_msg.child_frame_id = f'cam_{aruco_id}'
+				transform_msg.transform.translation.x = x_1
+				transform_msg.transform.translation.y = y_1
+				transform_msg.transform.translation.z = z_1
+				transform_msg.transform.rotation.x = qx
+				transform_msg.transform.rotation.y = qy
+				transform_msg.transform.rotation.z = qz
+				transform_msg.transform.rotation.w = qw
 				self.br.sendTransform(transform_msg)
-			except:
-				pass
+
+				try:
+					t = self.tf_buffer.lookup_transform('base_link', transform_msg.child_frame_id, rclpy.time.Time())
+					transform_msg.header.stamp = self.get_clock().now().to_msg()
+
+					transform_msg.header.frame_id = 'base_link'
+					transform_msg.child_frame_id = f'obj_{aruco_id}'
+					transform_msg.transform.translation.x = t.transform.translation.x
+					transform_msg.transform.translation.y = t.transform.translation.y
+					transform_msg.transform.translation.z = t.transform.translation.z
+					transform_msg.transform.rotation.x = t.transform.rotation.x
+					transform_msg.transform.rotation.y = t.transform.rotation.y
+					transform_msg.transform.rotation.z = t.transform.rotation.z
+					transform_msg.transform.rotation.w = t.transform.rotation.w
+					roll_1 , pitch_1 , yaw_1  = euler_from_quaternion([t.transform.rotation.x, t.transform.rotation.y, t.transform.rotation.z, t.transform.rotation.w])
+					print(aruco_id)
+					print(yaw_1)
+					self.br.sendTransform(transform_msg)
+				except:
+					pass
+		except:
+			pass
 
 
 		############ ADD YOUR CODE HERE ############

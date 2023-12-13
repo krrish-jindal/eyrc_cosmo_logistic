@@ -13,18 +13,19 @@ from geometry_msgs.msg import Twist
 import time
 from launch_ros.substitutions import FindPackageShare
 from ament_index_python.packages import get_package_share_directory
+from nav_msgs.msg import Odometry
 
 
-
+robot_pose = [0 , 0]
 
 def send_request(orientation):
 
-        request_dock = DockSw.Request()
-        request_dock.orientation_dock = True
-        request_dock.orientation = orientation
-        future = client_docking.call_async(request_dock)
-        rclpy.spin_until_future_complete(node, future)
-        return future.result()
+    request_dock = DockSw.Request()
+    request_dock.orientation_dock = True
+    request_dock.orientation = orientation
+    future = client_docking.call_async(request_dock)
+    rclpy.spin_until_future_complete(node, future)
+    return future.result()
 
 def rack_attach(rack):
 
@@ -78,6 +79,10 @@ def rack_detach(rack):
     vel_pub.publish(vel_msg)
     return dtc.result()
 
+def odometry_callback(msg):
+    robot_pose[0] = msg.pose.pose.position.x
+    robot_pose[1] = msg.pose.pose.position.y
+    print(robot_pose)
 
 def main():
     package_name = 'ebot_nav2'
@@ -97,6 +102,8 @@ def main():
     # Access elements of the dictionary
     positions = data_dict['position']
     rack1_coordinates = positions[0]['rack1']
+    rack2_coordinates = positions[1]['rack2']
+    rack3_coordinates = positions[2]['rack3']
     package_id = data_dict['package_id'][0]
    
 
@@ -108,19 +115,20 @@ def main():
 
     client_docking = node.create_client(srv_type=DockSw, srv_name='dock_control')
     vel_pub = node.create_publisher(Twist, "/cmd_vel", 10)
+    odom_sub = node.create_subscription(Odometry, 'odom', odometry_callback, 10)
     vel_msg=Twist()
     navigator = BasicNavigator()
     
-    orientation_rack_1 = 3.139999
-    orientation_rack_2 = -1.570000
-    orientation_rack_3 = 1.569999
+    orientation_rack_1 = rack1_coordinates[2]
+    orientation_rack_2 = rack2_coordinates[2]
+    orientation_rack_3 = rack3_coordinates[2]
     rack_list=["rack1","rack2","rack3"]
 
     goal_pick_1 = PoseStamped()
     goal_pick_1.header.frame_id = 'map'
     goal_pick_1.header.stamp = navigator.get_clock().now().to_msg()
     goal_pick_1.pose.position.x = 0.108200
-    goal_pick_1.pose.position.y = 4.528524
+    goal_pick_1.pose.position.y = rack1_coordinates[1]
     goal_pick_1.pose.orientation.x = 0.0
     goal_pick_1.pose.orientation.y = 0.0
     goal_pick_1.pose.orientation.z = 0.7077099
@@ -129,7 +137,8 @@ def main():
 
     goal_pick_2 = PoseStamped()
     goal_pick_2.header.frame_id = 'map'
-    goal_pick_2.pose.position.x = 1.960219
+    goal_pick_2.header.stamp = navigator.get_clock().now().to_msg()
+    goal_pick_2.pose.position.x = rack2_coordinates[0]
     goal_pick_2.pose.position.y = 2.118804
     goal_pick_2.pose.orientation.x = 0.0
     goal_pick_2.pose.orientation.y = 0.0
@@ -139,7 +148,7 @@ def main():
     goal_pick_3 = PoseStamped()
     goal_pick_3.header.frame_id = 'map'
     goal_pick_3.header.stamp = navigator.get_clock().now().to_msg()
-    goal_pick_3.pose.position.x = 1.998759
+    goal_pick_3.pose.position.x = rack3_coordinates[0]
     goal_pick_3.pose.position.y = -7.102119
     goal_pick_3.pose.orientation.x = 0.0
     goal_pick_3.pose.orientation.y = 0.0
@@ -169,8 +178,8 @@ def main():
     goal_drop_3 = PoseStamped()
     goal_drop_3.header.frame_id = 'map'
     goal_drop_3.header.stamp = navigator.get_clock().now().to_msg()
-    goal_drop_3.pose.position.x =1.550000
-    goal_drop_3.pose.position.y = -1.298586
+    goal_drop_3.pose.position.x =1.079030
+    goal_drop_3.pose.position.y = -1.813530
     goal_drop_3.pose.orientation.x = 0.0
     goal_drop_3.pose.orientation.y = 0.0
     goal_drop_3.pose.orientation.z =  0.6921004
@@ -182,6 +191,13 @@ def main():
     if package_id ==3:
         navigator.goToPose(goal_pick_3)
         nav_reach(3)
+        while abs(rack3_coordinates[0] - robot_pose[0]) > 0.01:
+            print(robot_pose, "f;lsdkgflksdfjgklsdnfgkjndsfgkjnds")
+            error = rack3_coordinates[0] - robot_pose[0]
+            vel_msg.linear.x = error * 2
+            vel_pub.publish(vel_msg)
+        vel_msg.linear.x = 0.0
+        vel_pub.publish(vel_msg)
         send_request(orientation_rack_3)
         rack_attach(rack_list[2])
 
@@ -214,8 +230,6 @@ def main():
         rack_detach(rack_list[0])
  
     
-    navigator.lifecycleShutdown()
-
     exit(0)
 
 

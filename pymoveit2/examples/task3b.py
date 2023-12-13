@@ -149,9 +149,12 @@ class endf(Node):
 
     def tf_cb(self, data):
         self.obj = "None"
-        if data.transforms[0].header.frame_id == "base_link":
-            if "obj" in data.transforms[0].child_frame_id:
-                self.obj_aruco = data.transforms[0].child_frame_id
+        try:
+            if data.transforms[0].header.frame_id == "base_link":
+                if "obj" in data.transforms[0].child_frame_id:
+                    self.obj_aruco = data.transforms[0].child_frame_id
+        except Exception as e:
+            print(e)
 
     def servo(self, box_no):
         while rclpy.ok():
