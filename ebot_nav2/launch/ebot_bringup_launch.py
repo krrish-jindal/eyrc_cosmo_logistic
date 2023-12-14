@@ -36,6 +36,7 @@ from nav2_common.launch import RewrittenYaml
 
 def generate_launch_description():
     bringup_dir = get_package_share_directory('nav2_bringup')
+    moveit_dir = get_package_share_directory('ur5_moveit')
     launch_dir = os.path.join(bringup_dir, 'launch')
     ebot_nav2_dir = get_package_share_directory('ebot_nav2')
     description_dir = get_package_share_directory('eyantra_warehouse')
@@ -131,6 +132,19 @@ def generate_launch_description():
         default_value=os.path.join(ebot_nav2_dir, 'rviz', 'nav2_default_view.rviz'),
         description='Full path to the RVIZ config file to use')
 
+    # docking_server = Node(
+    #     package='ebot_docking',
+    #     executable='ebot_docking_boilerplate.py',
+    #     name='docking',
+    #     output='screen'
+    # )
+
+    # ebot_nav_cmd = Node(
+    #     package='ebot_nav2',
+    #     executable='ebot_nav_cmd.py',
+    #     name='ebot_nav',
+    #     output='screen'
+    # )
 
     # Launch rviz
     start_rviz_cmd = Node(
@@ -147,11 +161,16 @@ def generate_launch_description():
        output='screen',
        parameters=[os.path.join(ebot_nav2_dir, 'config/ekf.yaml'), {'use_sim_time': use_sim_time}]
 )
-
+    
     sim_launch = IncludeLaunchDescription(
         PythonLaunchDescriptionSource(
             os.path.join(description_dir, 'launch', 'task3a.launch.py')))
     
+    moveit_spawn = IncludeLaunchDescription(
+        PythonLaunchDescriptionSource(
+            os.path.join(moveit_dir, 'launch', 'spawn_ur5_launch_moveit.launch.py')
+        )
+    )
     bringup_cmd_group = GroupAction([
         PushRosNamespace(
             condition=IfCondition(use_namespace),
@@ -218,7 +237,10 @@ def generate_launch_description():
     ld.add_action(start_rviz_cmd)
     ld.add_action(robot_localization_node)
     ld.add_action(sim_launch)
+    ld.add_action(moveit_spawn)
     ld.add_action(bringup_cmd_group)
+    # ld.add_action(docking_server)
+    # ld.add_action(ebot_nav_cmd)
 
 
     return ld
