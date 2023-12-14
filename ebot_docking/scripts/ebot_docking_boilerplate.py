@@ -19,6 +19,10 @@ from rclpy.executors import MultiThreadedExecutor
 from tf_transformations import euler_from_quaternion
 from ebot_docking.srv import DockSw  # Import custom service message
 import math, statistics
+from launch_ros.substitutions import FindPackageShare
+from ament_index_python.packages import get_package_share_directory
+import os
+import yaml
 import time
 # Define a class for your ROS2 node
 class MyRobotDockingController(Node):
@@ -56,6 +60,25 @@ class MyRobotDockingController(Node):
         self.normalize_yaw_bot = 0
         self.normalize_yaw_rack = 0
         self.difference = 0
+        package_name = 'ebot_nav2'
+        config = "config/config.yaml"
+        self.flag =0
+
+
+        ebot_nav2_dir = get_package_share_directory('ebot_nav2')
+
+        pkg_share = FindPackageShare(package=package_name).find(package_name)
+        config_path = os.path.join(pkg_share, config)
+        with open(config_path, 'r') as infp:
+            pos_rack = infp.read()
+
+        data_dict = yaml.safe_load(pos_rack)
+
+        positions = data_dict['position']
+        self.rack1_coordinates = positions[0]['rack1']
+        self.rack2_coordinates = positions[1]['rack2']
+        self.rack3_coordinates = positions[2]['rack3']
+       
         # 
         # 
 
@@ -106,20 +129,37 @@ class MyRobotDockingController(Node):
             print("After")
             self.difference = self.normalize_yaw_rack - self.normalize_yaw_bot
 
-            if self.orientation_dock == True:
+            if self.orientation_dock ==True:
+                error = self.rack3_coordinates[0] - self.robot_pose[0]
+                if abs(self.rack3_coordinates[0] - self.robot_pose[0]) > 0.001:
+                    print(self.robot_pose[0],"---------44444444")
+                    vel.linear.x = error
+                    self.vel_pub.publish(vel)
+                else:
+                    print("Before")
+                    vel.linear.x = 0.0
+                    self.vel_pub.publish(vel)
+                    self.flag = 1
+                    self.orientation_dock = False
+
+            elif self.flag == 1:
                 if abs(self.difference) > 0.02:
                     vel.angular.z = self.difference *0.6
                     self.vel_pub.publish(vel)
+
                 else:
                     vel.angular.z = 0.0
                     self.vel_pub.publish(vel)
                     self.orientation_dock = False
                     self.linear_dock = False
-                    print("successfully oriented")
+                    self.flag = 0
+
+                    print("successfully oriented",self.linear_dock)
             elif self.linear_dock == False:
-                print("-----------------")
-                print("L-",self.usrleft_value,"R-",self.usrright_value)
-                print("Diff---",self.difference)
+                print("FLAG---",self.flag)
+                print("++++++++++++++++++++++++++++++++++++")
+                # print("L-",self.usrleft_value,"R-",self.usrright_value)
+                # print("Diff---",self.difference)
                 self.diff=self.usrleft_value-self.usrright_value
 
                 if self.usrleft_value > 0.15 and round(self.usrright_value,1) != round(self.usrleft_value,1):

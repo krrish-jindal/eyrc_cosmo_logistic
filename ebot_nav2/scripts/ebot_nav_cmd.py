@@ -6,7 +6,6 @@ import rclpy
 from rclpy.duration import Duration
 from rclpy.node import Node
 from ebot_docking.srv import DockSw
-from rclpy.callback_groups import ReentrantCallbackGroup
 from linkattacher_msgs.srv import AttachLink, DetachLink
 import yaml
 import os
@@ -25,30 +24,19 @@ class NavigationController(Node):
         self.detach = self.create_client(srv_type=DetachLink, srv_name='/DETACH_LINK')
         self.client_docking = self.create_client(srv_type=DockSw, srv_name='dock_control')
         self.vel_pub = self.create_publisher(Twist, "/cmd_vel", 10)
-        self.odom_sub = self.create_subscription(Odometry, 'odom', self.odometry_callback, 10)
-        self.callback_group = ReentrantCallbackGroup()
         self.vel_msg = Twist()
         self.navigator = BasicNavigator()
-        self.flag = False
-
+        self.flag=False
         self.robot_pose = [0, 0]
 
-    def odometry_callback(self, msg):
-        self.robot_pose[0] = msg.pose.pose.position.x
-        self.robot_pose[1] = msg.pose.pose.position.y
-        print(self.robot_pose, "++++++++++++++++++++++")
-        self.correct(self.rack3_coordinates[2], self.goal_drop_3, self.rack_list[2])
+
 
     def send_request(self, orientation):
         request_dock = DockSw.Request()
         request_dock.orientation_dock = True
         request_dock.orientation = orientation
-        print("i am in")
         future = self.client_docking.call_async(request_dock)
-        print("crossed future")
-        # rclpy.spin_until_future_complete(self, future)
-        print("crossed rclpy spin future")
-        self.flag = True
+        rclpy.spin_until_future_complete(self, future)
         return future.result()
 
     def rack_attach(self, rack):
@@ -66,6 +54,9 @@ class NavigationController(Node):
         self.vel_msg.linear.x = 0.0
         self.vel_pub.publish(self.vel_msg)
         return atc.result()
+    
+
+
 
     def nav_reach(self, goal):
         while not self.navigator.isTaskComplete():
@@ -83,22 +74,6 @@ class NavigationController(Node):
             print('Goal failed!')
         else:
             print('Goal has an invalid return status!')
-    def correct(self, orientation_rack, goal_drop, rack):
-        error = self.rack3_coordinates[0] - self.robot_pose[0]
-        print(error)
-        if abs(self.rack3_coordinates[0] - self.robot_pose[0]) > 0.001:
-            self.vel_msg.linear.x = error
-            self.vel_pub.publish(self.vel_msg)
-        elif self.flag == True:
-            self.rack_attach(rack)
-            self.navigator.goToPose(goal_drop)
-            self.nav_reach(goal_drop)
-            self.rack_detach(rack)
-        else:
-            self.vel_msg.linear.x = 0.0
-            self.vel_pub.publish(self.vel_msg)
-            self.send_request(orientation_rack)
-
 
     def rack_detach(self, rack):
         req = DetachLink.Request()
@@ -116,18 +91,30 @@ class NavigationController(Node):
         self.vel_pub.publish(self.vel_msg)
         return dtc.result()
 
-    def navigate_and_dock(self, goal_pick, goal_drop, orientation_rack, rack):
+
+    def navigate_and_dock(self, goal_pick, goal_drop, orientation_rack, rack,bot_coordinates):
         self.navigator.goToPose(goal_pick)
         self.nav_reach(goal_pick)
-        # rclpy.spin(self)
-        # while abs(self.rack3_coordinates[0] - self.robot_pose[0]) > 0.01:
-        #     print(self.robot_pose[0], "----------------------------")
 
+        self.send_request(orientation_rack)
+        self.rack_attach(rack)
 
-        self.vel_msg.linear.x = 0.0
-        self.vel_pub.publish(self.vel_msg)
-        rclpy.spin(self)
-        print("POSE----",self.robot_pose)
+        self.navigator.goToPose(goal_drop)
+        self.nav_reach(goal_drop)
+        self.rack_detach(rack)
+
+        
+    # def navigate_and_dock(self, goal_pick, goal_drop, orientation_rack, rack,bot_coordinates):
+    #     self.navigator.goToPose(goal_pick)
+    #     self.nav_reach(goal_pick)
+    #     # self.correct(bot_coordinates)
+    #     print("POSE----",self.robot_pose)
+    #     if self.flag == False:
+    #         self.send_request(orientation_rack)
+    #         self.rack_attach(rack)
+    #         self.navigator.goToPose(goal_drop)
+    #         self.nav_reach(goal_drop)
+    #         self.rack_detach(rack)        
 
 
     def main(self):
@@ -144,21 +131,26 @@ class NavigationController(Node):
         data_dict = yaml.safe_load(pos_rack)
 
         positions = data_dict['position']
-        self.rack1_coordinates = positions[0]['rack1']
-        self.rack2_coordinates = positions[1]['rack2']
-        self.rack3_coordinates = positions[2]['rack3']
+        rack1_coordinates = positions[0]['rack1']
+        rack2_coordinates = positions[1]['rack2']
+        rack3_coordinates = positions[2]['rack3']
         package_id = data_dict['package_id'][0]
 
-        orientation_rack_1 = self.rack1_coordinates[2]
-        orientation_rack_2 = self.rack2_coordinates[2]
-        orientation_rack_3 = self.rack3_coordinates[2]
-        self.rack_list = ["rack1", "rack2", "rack3"]
+        orientation_rack_1 = rack1_coordinates[2]
+        orientation_rack_2 = rack2_coordinates[2]
+        orientation_rack_3 = rack3_coordinates[2]
+        rack_list = ["rack1", "rack2", "rack3"]
 
         goal_pick_1 = PoseStamped()
         goal_pick_1.header.frame_id = 'map'
         goal_pick_1.header.stamp = self.navigator.get_clock().now().to_msg()
         goal_pick_1.pose.position.x = 0.108200
-        goal_pick_1.pose.position.y = self.rack1_coordinates[1]
+        goal_pick_1.pose.position.y = rack1_coordinates[1]
+        goal_pick_1.pose.orientation.x = 0.0
+        goal_pick_1.pose.orientation.y = 0.0
+        goal_pick_1.pose.orientation.z = 0.7077099
+        goal_pick_1.pose.orientation.w = 0.7065031
+
         # Define other goals...
 
         goal_drop_1 = PoseStamped()
@@ -204,15 +196,15 @@ class NavigationController(Node):
         goal_drop_2.pose.orientation.z =  -0.70398
         goal_drop_2.pose.orientation.w =  0.7102198
 
-        self.goal_drop_3 = PoseStamped()
-        self.goal_drop_3.header.frame_id = 'map'
-        self.goal_drop_3.header.stamp = self.navigator.get_clock().now().to_msg()
-        self.goal_drop_3.pose.position.x =1.550000
-        self.goal_drop_3.pose.position.y = -1.298586
-        self.goal_drop_3.pose.orientation.x = 0.0
-        self.goal_drop_3.pose.orientation.y = 0.0
-        self.goal_drop_3.pose.orientation.z =  0.6921004
-        self.goal_drop_3.pose.orientation.w = 0.7218012 
+        goal_drop_3 = PoseStamped()
+        goal_drop_3.header.frame_id = 'map'
+        goal_drop_3.header.stamp = self.navigator.get_clock().now().to_msg()
+        goal_drop_3.pose.position.x =1.550000
+        goal_drop_3.pose.position.y = -1.298586
+        goal_drop_3.pose.orientation.x = 0.0
+        goal_drop_3.pose.orientation.y = 0.0
+        goal_drop_3.pose.orientation.z =  0.6921004
+        goal_drop_3.pose.orientation.w = 0.7218012 
 
 
         # Define other drop goals...
@@ -220,7 +212,7 @@ class NavigationController(Node):
         self.navigator.waitUntilNav2Active()
 
         if package_id == 3:
-            self.navigate_and_dock(goal_pick_3, self.goal_drop_3, orientation_rack_3, self.rack_list[2])
+            self.navigate_and_dock(goal_pick_3, goal_drop_3, orientation_rack_3, rack_list[2],rack3_coordinates[0])
         elif package_id == 2:
             # Navigate for package_id 2
             pass
