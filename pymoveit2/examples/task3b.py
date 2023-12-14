@@ -118,11 +118,11 @@ class endf(Node):
         "joint_positions_final_1",
         [
             0.0,
-            -2.07694,
-            -0.418879,
-            -3.26377,
-            -1.41372,
-            3.05432
+            -2.565,
+            -0.488,
+            -3.141,
+            -1.588,
+            3.14159
         ],
     )
         self.declare_parameter(
@@ -177,7 +177,7 @@ class endf(Node):
                     joint_positions_final_2 = (self.get_parameter("joint_positions_final_2").get_parameter_value().double_array_value)
                     joint_positions_final_3 = (self.get_parameter("joint_positions_final_3").get_parameter_value().double_array_value)
 
-                    if round((box49.transform.translation.y) - (tool0.transform.translation.y),4) > 0.004 or round((box49.transform.translation.x) - (tool0.transform.translation.x),4) > 0.004 or round((box49.transform.translation.z) - (tool0.transform.translation.z),4) > 0.003:
+                    if round((box49.transform.translation.y) - (tool0.transform.translation.y),4) > 0.004 or round((box49.transform.translation.x) - (tool0.transform.translation.x),4) > 0.004 or round((box49.transform.translation.z) - (tool0.transform.translation.z),4) > 0.004:
                         __twist_msg = TwistStamped()
                         __twist_msg.header.stamp = self.get_clock().now().to_msg()
                         __twist_msg.header.frame_id = ur5.base_link_name()
@@ -206,7 +206,7 @@ class endf(Node):
 
                     except Exception as e:
                         print(e)
-                    if round(yaw) == 2 or round(yaw) == 1 and (round(tool0.transform.translation.x,2) > 0.21):
+                    if (round(yaw) == 2 or round(yaw) == 1) and (round(tool0.transform.translation.x,2) > 0.23):
                         __twist_msg = TwistStamped()
                         __twist_msg.header.stamp = self.get_clock().now().to_msg()
                         __twist_msg.header.frame_id = ur5.base_link_name()
