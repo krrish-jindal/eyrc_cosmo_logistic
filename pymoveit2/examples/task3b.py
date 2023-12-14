@@ -71,6 +71,7 @@ class endf(Node):
         self.gripper_control_off = self.create_client(DetachLink, '/GripperMagnetOFF')
         self.callback_group = ReentrantCallbackGroup()
         self.pz = 0
+        self.obj_aruco = "None"
         self.last_obj = "None"
 
         self.moveit2 = MoveIt2(
@@ -166,8 +167,8 @@ class endf(Node):
                     try:
                         box49 = self.tf_buffer.lookup_transform('base_link', f"obj_{box_no}", rclpy.time.Time())
                         tool0 = self.tf_buffer.lookup_transform('base_link', "tool0", rclpy.time.Time())
-                    except:
-                        pass
+                    except Exception as e:
+                        print(e)
                     print(f"y ={round((box49.transform.translation.y) - (tool0.transform.translation.y),4)}")
                     print(f"x ={round((box49.transform.translation.x) - (tool0.transform.translation.x),4)}")
                     print(f"z ={round((box49.transform.translation.z) - (tool0.transform.translation.z),4)}")
@@ -176,7 +177,7 @@ class endf(Node):
                     joint_positions_final_2 = (self.get_parameter("joint_positions_final_2").get_parameter_value().double_array_value)
                     joint_positions_final_3 = (self.get_parameter("joint_positions_final_3").get_parameter_value().double_array_value)
 
-                    if round((box49.transform.translation.y) - (tool0.transform.translation.y),4) > 0.003 or round((box49.transform.translation.x) - (tool0.transform.translation.x),4) > 0.003 or round((box49.transform.translation.z) - (tool0.transform.translation.z),4) > 0.003:
+                    if round((box49.transform.translation.y) - (tool0.transform.translation.y),4) > 0.004 or round((box49.transform.translation.x) - (tool0.transform.translation.x),4) > 0.004 or round((box49.transform.translation.z) - (tool0.transform.translation.z),4) > 0.003:
                         __twist_msg = TwistStamped()
                         __twist_msg.header.stamp = self.get_clock().now().to_msg()
                         __twist_msg.header.frame_id = ur5.base_link_name()
@@ -203,13 +204,13 @@ class endf(Node):
                         print(f"x = {round(tool0.transform.translation.x,2)}")
                         print(f"y = {round(tool0.transform.translation.x,2)}")
 
-                    except:
-                        pass
-                    if round(yaw) == 2 and (round(tool0.transform.translation.x,2) > 0.21):
+                    except Exception as e:
+                        print(e)
+                    if round(yaw) == 2 or round(yaw) == 1 and (round(tool0.transform.translation.x,2) > 0.21):
                         __twist_msg = TwistStamped()
                         __twist_msg.header.stamp = self.get_clock().now().to_msg()
                         __twist_msg.header.frame_id = ur5.base_link_name()
-                        __twist_msg.twist.linear.z = -0.04
+                        __twist_msg.twist.linear.z = -0.08
                         __twist_msg.twist.linear.x = -0.4
                         self.twist_pub.publish(__twist_msg)
                     elif round(yaw) == 3 and (round(tool0.transform.translation.y,2) > 0.21):
@@ -267,8 +268,8 @@ class endf(Node):
                 self.gripper_control_off.call_async(req)
                 break
                     
-            except:
-                pass
+            except Exception as e:
+                print(e)
 
 
 def main():
@@ -333,7 +334,7 @@ def main():
                 enftf.servo(obj)
                 enftf.moveit2.move_to_configuration(joint_positions_initial)
                 enftf.moveit2.wait_until_executed()
-            elif round(yaw) == 2:
+            elif round(yaw) == 2 or round(yaw) == 1:
                 enftf.servo(obj)
                 enftf.moveit2.move_to_configuration(joint_positions_initial)
                 enftf.moveit2.wait_until_executed()
