@@ -40,6 +40,9 @@ from rclpy.qos import (
 	QoSReliabilityPolicy,
 )
 
+from ur_msgs.srv import SetIO
+from controller_manager_msgs.srv import SwitchController # module call
+
 RACK_MESH = path.join(
 	path.dirname(path.realpath(__file__)), "assets", "rack1.stl"
 )
@@ -65,10 +68,9 @@ class endf(Node):
         self.listener = tf2_ros.TransformListener(self.tf_buffer, self)
         self.br = tf2_ros.TransformBroadcaster(self)
         self.switch = False
+        self.__contolMSwitch = self.create_client(SwitchController, "/controller_manager/switch_controller")
         self.tf_topic = self.create_subscription(TFMessage, '/tf', self.tf_cb , 10)
         self.twist_pub = self.create_publisher(TwistStamped, "/servo_node/delta_twist_cmds", 10)
-        self.gripper_control = self.create_client(AttachLink, '/GripperMagnetON')
-        self.gripper_control_off = self.create_client(DetachLink, '/GripperMagnetOFF')
         self.callback_group = ReentrantCallbackGroup()
         self.pz = 0
         self.obj_aruco = "None"
@@ -159,6 +161,45 @@ class endf(Node):
         ],
     )
 
+    def trajactory(self):
+        switchParam = SwitchController.Request()
+        switchParam.activate_controllers = ["scaled_joint_trajectory_controller"] # for normal use of moveit
+        switchParam.strictness = 2
+        switchParam.start_asap = False
+
+        while not self.__contolMSwitch.wait_for_service(timeout_sec=5.0):
+            self.get_logger().warn(f"Service control Manager is not yet available...")
+        self.__contolMSwitch.call_async(switchParam)
+        print("[CM]: Switching Complete")
+
+    def servo_active(self):
+        switchParam = SwitchController.Request()
+        switchParam.deactivate_controllers = ["forward_position_controller"] # for servoing
+        switchParam.strictness = 2
+        switchParam.start_asap = False
+
+        while not self.__contolMSwitch.wait_for_service(timeout_sec=5.0):
+            self.get_logger().warn(f"Service control Manager is not yet available...")
+        self.__contolMSwitch.call_async(switchParam)
+        print("[CM]: Switching Complete")
+
+    def gripper_call(self, state):
+        '''
+        based on the state given as i/p the service is called to activate/deactivate
+        pin 16 of TCP in UR5
+        i/p: node, state of pin:Bool
+        o/p or return: response from service call
+        '''
+        gripper_control = self.create_client(SetIO, '/io_and_status_controller/set_io')
+        while not gripper_control.wait_for_service(timeout_sec=1.0):
+            self.get_logger().info('EEF Tool service not available, waiting again...')
+        req         = SetIO.Request()
+        req.fun     = 1
+        req.pin     = 16
+        req.state   = float(state)
+        gripper_control.call_async(req)
+        return state
+    
     def tf_cb(self, data):
         self.obj = "None"
         try:
@@ -197,15 +238,8 @@ class endf(Node):
                         __twist_msg.twist.linear.z = round((box49.transform.translation.z) - (tool0.transform.translation.z),4) *2
                         self.twist_pub.publish(__twist_msg)
                     else :
-                        while not self.gripper_control.wait_for_service(timeout_sec=1.0):
-                            self.get_logger().info('EEF service not available, waiting again...')
                         print("trying to attach")
-                        req = AttachLink.Request()
-                        req.model1_name =  f'box{box_no}'      
-                        req.link1_name  = 'link'       
-                        req.model2_name =  'ur5'       
-                        req.link2_name  = 'wrist_3_link'
-                        self.gripper_control.call_async(req)
+                        self.gripper_call(1)
                         break
                 while rclpy.ok():
                     try:
@@ -225,6 +259,7 @@ class endf(Node):
                         __twist_msg.twist.linear.x = -0.4
                         self.twist_pub.publish(__twist_msg)
                     elif (round(yaw) == 2 or round(yaw) == 1) and (round(tool0.transform.translation.x,2) <= 0.23):
+                        self.trajactory()
                         self.moveit2.move_to_configuration(joint_positions_final_1)
                         self.moveit2.wait_until_executed()
                         self.moveit2.move_to_configuration(joint_positions_final_1)
@@ -239,6 +274,7 @@ class endf(Node):
                         __twist_msg.twist.linear.y = -0.2
                         self.twist_pub.publish(__twist_msg)
                     elif round(yaw) == 3 and (round(tool0.transform.translation.y,2) <= 0.23):
+                        self.trajactory()
                         self.moveit2.move_to_configuration(joint_positions_final_2)
                         self.moveit2.wait_until_executed()
                         self.moveit2.move_to_configuration(joint_positions_final_2)
@@ -254,6 +290,7 @@ class endf(Node):
                         __twist_msg.twist.linear.x = -0.2
                         self.twist_pub.publish(__twist_msg)
                     elif round(yaw) == 0 and (round(tool0.transform.translation.y,2) >= -0.26):
+                        self.trajactory()
                         self.moveit2.move_to_configuration(joint_positions_back)
                         self.moveit2.wait_until_executed()
                         self.moveit2.move_to_configuration(joint_positions_back)
@@ -264,15 +301,8 @@ class endf(Node):
                         self.moveit2.wait_until_executed()
                         break
 
-                while not self.gripper_control.wait_for_service(timeout_sec=1.0):
-                    self.enftf.get_logger().info('EEF service not available, waiting again...')
-                print("trying to attach")
-                req = DetachLink.Request()
-                req.model1_name =  f'box{box_no}'      
-                req.link1_name  = 'link'       
-                req.model2_name =  'ur5'       
-                req.link2_name  = 'wrist_3_link'
-                self.gripper_control_off.call_async(req)
+                print("trying to detach")
+                self.gripper_call(0)
                 break
                     
             except Exception as e:
@@ -331,21 +361,29 @@ def main():
             if enftf.last_obj == obj:
                 pass
             elif round(yaw) == 0:
+                enftf.trajactory()
                 enftf.moveit2.move_to_configuration(joint_positions_negative)
                 enftf.moveit2.wait_until_executed()
+                enftf.servo_active()
                 enftf.servo(obj)
+                enftf.trajactory()
                 enftf.moveit2.move_to_configuration(joint_positions_back)
                 enftf.moveit2.wait_until_executed()
                 enftf.moveit2.move_to_configuration(joint_positions_initial)
                 enftf.moveit2.wait_until_executed()
             elif round(yaw) == 3:
+                enftf.trajactory()
                 enftf.moveit2.move_to_configuration(joint_positions_positive)
                 enftf.moveit2.wait_until_executed()
+                enftf.servo_active()
                 enftf.servo(obj)
+                enftf.trajactory()
                 enftf.moveit2.move_to_configuration(joint_positions_initial)
                 enftf.moveit2.wait_until_executed()
             elif round(yaw) == 2 or round(yaw) == 1:
+                enftf.servo_active()
                 enftf.servo(obj)
+                enftf.trajactory()
                 enftf.moveit2.move_to_configuration(joint_positions_initial)
                 enftf.moveit2.wait_until_executed()
             enftf.last_obj = obj
