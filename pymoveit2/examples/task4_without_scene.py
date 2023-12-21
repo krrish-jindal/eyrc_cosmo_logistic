@@ -43,14 +43,6 @@ from rclpy.qos import (
 from ur_msgs.srv import SetIO
 from controller_manager_msgs.srv import SwitchController # module call
 
-
-RACK_MESH = path.join(
-	path.dirname(path.realpath(__file__)), "assets", "rack1.stl"
-)
-BASE_MESH = path.join(
-	path.dirname(path.realpath(__file__)), "assets", "arm_base_40.stl"
-)
-
 endf_x = 0
 endf_y = 0
 endf_z = 0
@@ -62,7 +54,6 @@ pos3 = [0.35, 0.1, 0.68]
 
 def truncate(f, n):
 	return math.floor(f * 10 ** n) / 10 ** n
-
 class endf(Node):
     def __init__(self):
         super().__init__('move_ur5') 
@@ -337,38 +328,12 @@ def main():
     executor_thread = Thread(target=executor.spin, daemon=True, args=())
     executor_thread.start()
 
-    filepath1 = RACK_MESH
-    filepath2 = BASE_MESH
-    position_r1 = [0.52,0.05,0.17]
-    quat_xyzw_r1 = [0.00,0.00,0.00,0.00]
-    position_r2 = [0.25,-0.62,0.17]
-    quat_xyzw_r2 = [0, 0, 0.7068252, 0.7073883]
-    position_r3 = [0.25,0.74,0.17]
-    quat_xyzw_r3 = [0, 0, -0.7068252, 0.7073883]
-
-    rack_pos = [position_r1,position_r2,position_r3]
-    rack_quat = [quat_xyzw_r1,quat_xyzw_r2,quat_xyzw_r3]
-
-    pos_b = [-0.20, 0, -0.26]
-    quat_b= [0, 0, 1, 0.000796327]
-    base_pos=[pos_b,quat_b]
-    mesh_rack_id = ["rack_1","rack_2","rack_3"]
     joint_positions_initial = (enftf.get_parameter("joint_positions_initial").get_parameter_value().double_array_value)
     joint_positions_positive = (enftf.get_parameter("joint_positions_positive").get_parameter_value().double_array_value)
     joint_positions_negative = (enftf.get_parameter("joint_positions_negative").get_parameter_value().double_array_value)
     joint_positions_back = (enftf.get_parameter("joint_positions_back").get_parameter_value().double_array_value)
 
 
-    for i in range(len(position_r1)):
-            time.sleep(2)
-            enftf.moveit2.add_collision_mesh(
-                filepath=filepath1, id=mesh_rack_id[i], position=rack_pos[i], quat_xyzw=rack_quat[i], frame_id=ur5.base_link_name()
-            )
-            time.sleep(2)
-
-    enftf.moveit2.add_collision_mesh(
-    filepath=filepath2, id="base", position=base_pos[0], quat_xyzw=base_pos[1], frame_id=ur5.base_link_name())
-    
 
     while rclpy.ok():
         try:
