@@ -177,11 +177,6 @@ class endf(Node):
         self.__contolMSwitch.call_async(switchParam)
         print("[CM]: Switching Complete Servo")
 
-        while not self.__contolMSwitch.wait_for_service(timeout_sec=5.0):
-            self.get_logger().warn(f"Service control Manager is not yet available...")
-        self.__contolMSwitch.call_async(switchParam)
-        print("[CM]: Switching Complete")
-
     def gripper_call(self, state):
         '''
         based on the state given as i/p the service is called to activate/deactivate
@@ -220,9 +215,9 @@ class endf(Node):
                         tool0 = self.tf_buffer.lookup_transform('base_link', "tool0", rclpy.time.Time())
                     except Exception as e:
                         print(e)
-                    print(f"y ={round((box49.transform.translation.y) - (tool0.transform.translation.y),4)}")
-                    print(f"x ={round((box49.transform.translation.x) - (tool0.transform.translation.x),4)}")
-                    print(f"z ={round((box49.transform.translation.z) - (tool0.transform.translation.z),4)}")
+                    # print(f"y ={round((box49.transform.translation.y) - (tool0.transform.translation.y),4)}")
+                    # print(f"x ={round((box49.transform.translation.x) - (tool0.transform.translation.x),4)}")
+                    # print(f"z ={round((box49.transform.translation.z) - (tool0.transform.translation.z),4)}")
                     joint_positions_initial = (self.get_parameter("joint_positions_initial").get_parameter_value().double_array_value)
                     joint_positions_final_1 = (self.get_parameter("joint_positions_final_1").get_parameter_value().double_array_value)
                     joint_positions_final_2 = (self.get_parameter("joint_positions_final_2").get_parameter_value().double_array_value)
@@ -252,8 +247,8 @@ class endf(Node):
                         box49 = self.tf_buffer.lookup_transform('base_link', f"obj_{box_no}", rclpy.time.Time())
                         tool0 = self.tf_buffer.lookup_transform('base_link', "tool0", rclpy.time.Time())
                         roll , pitch , yaw  = euler_from_quaternion([box49.transform.rotation.x, box49.transform.rotation.y, box49.transform.rotation.z, box49.transform.rotation.w])
-                        print(f"x = {round(tool0.transform.translation.x,2)}")
-                        print(f"y = {round(tool0.transform.translation.x,2)}")
+                        # print(f"x = {round(tool0.transform.translation.x,2)}")
+                        # print(f"y = {round(tool0.transform.translation.x,2)}")
 
                     except Exception as e:
                         print(e)
@@ -263,17 +258,20 @@ class endf(Node):
                         
                         
                     if (round(yaw) == 2 or round(yaw) == 1) and (round(tool0.transform.translation.x,2) > 0.23):
+                        print(obj)
                         __twist_msg = TwistStamped()
                         __twist_msg.header.stamp = self.get_clock().now().to_msg()
                         __twist_msg.header.frame_id = ur5.base_link_name()
-                        __twist_msg.twist.linear.z = 0.1
+                        __twist_msg.twist.linear.z = 0.4
                         __twist_msg.twist.linear.x = -0.4
+                        print("1")
                         self.twist_pub.publish(__twist_msg)
                     elif (round(yaw) == 2 or round(yaw) == 1) and (round(tool0.transform.translation.x,2) <= 0.23):
                         self.trajactory()
                         self.moveit2.move_to_configuration(joint_positions_final_1)
                         self.moveit2.wait_until_executed()
                         self.moveit2.move_to_configuration(joint_positions_final_1)
+                        print("2")
                         self.moveit2.wait_until_executed()
                         break
 
@@ -281,8 +279,9 @@ class endf(Node):
                         __twist_msg = TwistStamped()
                         __twist_msg.header.stamp = self.get_clock().now().to_msg()
                         __twist_msg.header.frame_id = ur5.base_link_name()
-                        __twist_msg.twist.linear.z = 0.1
+                        __twist_msg.twist.linear.z = 0.4
                         __twist_msg.twist.linear.y = -0.2
+                        print("3")
                         self.twist_pub.publish(__twist_msg)
                     elif round(yaw) == None and (round(tool0.transform.translation.y,2) <= 0.25):
                         self.trajactory()
@@ -290,6 +289,7 @@ class endf(Node):
                         self.moveit2.wait_until_executed()
                         self.moveit2.move_to_configuration(joint_positions_final_2)
                         self.moveit2.wait_until_executed()
+                        print("4")
                         break
 
                     elif round(yaw) == 3 and (round(tool0.transform.translation.y,2) < -0.26):
@@ -299,6 +299,7 @@ class endf(Node):
                         __twist_msg.twist.linear.z = 0.04
                         __twist_msg.twist.linear.y = 0.2
                         __twist_msg.twist.linear.x = -0.2
+                        print("5")
                         self.twist_pub.publish(__twist_msg)
                     elif round(yaw) == 3 and (round(tool0.transform.translation.y,2) >= -0.26):
                         self.trajactory()
@@ -310,6 +311,7 @@ class endf(Node):
                         self.moveit2.wait_until_executed()
                         self.moveit2.move_to_configuration(joint_positions_final_3)
                         self.moveit2.wait_until_executed()
+                        print("7")
                         break
 
 
@@ -349,38 +351,41 @@ def main():
             roll , pitch , yaw  = euler_from_quaternion([box.transform.rotation.x, box.transform.rotation.y, box.transform.rotation.z, box.transform.rotation.w])
             print(yaw)
             
-            if enftf.last_obj == obj:
-                pass
+            if obj == "15":
+                if enftf.last_obj == obj:
+                    pass
 
-            elif round(yaw) == 3:
-                enftf.trajactory()
-                enftf.moveit2.move_to_configuration(joint_positions_negative)
-                enftf.moveit2.wait_until_executed()
-                enftf.servo_active()
-                enftf.servo(obj)
-                enftf.trajactory()
-                enftf.moveit2.move_to_configuration(joint_positions_back)
-                enftf.moveit2.wait_until_executed()
-                enftf.moveit2.move_to_configuration(joint_positions_initial)
-                enftf.moveit2.wait_until_executed()
+                elif round(yaw) == 3:
+                    enftf.trajactory()
+                    enftf.moveit2.move_to_configuration(joint_positions_negative)
+                    enftf.moveit2.wait_until_executed()
+                    enftf.servo_active()
+                    enftf.servo(obj)
+                    enftf.trajactory()
+                    enftf.moveit2.move_to_configuration(joint_positions_back)
+                    enftf.moveit2.wait_until_executed()
+                    enftf.moveit2.move_to_configuration(joint_positions_initial)
+                    enftf.moveit2.wait_until_executed()
 
-            elif round(yaw) == None:
-                enftf.trajactory()
-                enftf.moveit2.move_to_configuration(joint_positions_positive)
-                enftf.moveit2.wait_until_executed()
-                enftf.servo_active()
-                enftf.servo(obj)
-                enftf.trajactory()
-                enftf.moveit2.move_to_configuration(joint_positions_initial)
-                enftf.moveit2.wait_until_executed()
+                elif round(yaw) == None:
+                    enftf.trajactory()
+                    enftf.moveit2.move_to_configuration(joint_positions_positive)
+                    enftf.moveit2.wait_until_executed()
+                    enftf.servo_active()
+                    enftf.servo(obj)
+                    enftf.trajactory()
+                    enftf.moveit2.move_to_configuration(joint_positions_initial)
+                    enftf.moveit2.wait_until_executed()
 
-            elif round(yaw) == 2 or round(yaw) == 1:
-                enftf.servo_active()
-                enftf.servo(obj)
-                enftf.trajactory()
-                enftf.moveit2.move_to_configuration(joint_positions_initial)
-                enftf.moveit2.wait_until_executed()
-            enftf.last_obj = obj
+                elif round(yaw) == 2 or round(yaw) == 1:
+                    print(obj)
+                    enftf.servo_active()
+                    print("alok")
+                    enftf.servo(obj)
+                    enftf.trajactory()
+                    enftf.moveit2.move_to_configuration(joint_positions_initial)
+                    enftf.moveit2.wait_until_executed()
+                enftf.last_obj = obj
 
         except Exception as e:
             print(e)
