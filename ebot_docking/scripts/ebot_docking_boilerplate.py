@@ -73,12 +73,15 @@ class MyRobotDockingController(Node):
             pos_rack = infp.read()
 
         data_dict = yaml.safe_load(pos_rack)
-
+        self.x_pose = []
         positions = data_dict['position']
         self.rack1_coordinates = positions[0]['rack1']
+        self.x_pose.append(self.rack1_coordinates)
         self.rack2_coordinates = positions[1]['rack2']
+        self.x_pose.append(self.rack2_coordinates)
         self.rack3_coordinates = positions[2]['rack3']
-       
+        self.x_pose.append(self.rack3_coordinates)
+
         # 
         # 
 
@@ -130,10 +133,10 @@ class MyRobotDockingController(Node):
             self.difference = self.normalize_yaw_rack - self.normalize_yaw_bot
 
             if self.orientation_dock ==True:
-                error = self.rack3_coordinates[0] - self.robot_pose[0]
-                if abs(self.rack3_coordinates[0] - self.robot_pose[0]) > 0.01:
+                error = self.x_pose[int(self.rack_no) - 1][0] - self.robot_pose[0]
+                if abs(self.x_pose[int(self.rack_no) - 1][0] - self.robot_pose[0]) > 0.01:
                     print(self.robot_pose[0],"---------44444444")
-                    vel.linear.x = error
+                    vel.linear.x = error *0.6
                     self.vel_pub.publish(vel)
                 else:
                     print("Before")

@@ -36,10 +36,11 @@ class NavigationController(Node):
 
 
 
-	def send_request(self, orientation):
+	def send_request(self, orientation, rack_no):
 		request_dock = DockSw.Request()
 		request_dock.orientation_dock = True
 		request_dock.orientation = orientation
+		request_dock.rack_no = rack_no
 		future = self.client_docking.call_async(request_dock)
 		rclpy.spin_until_future_complete(self, future)
 		return future.result()
@@ -129,32 +130,17 @@ class NavigationController(Node):
 		return dtc.result()
 
 
-	def navigate_and_dock(self, goal_pick, goal_drop, goal_int, orientation_rack, rack,bot_coordinates):
+	def navigate_and_dock(self, goal_pick, goal_drop, goal_int, orientation_rack, rack, rack_no):
 		self.navigator.goToPose(goal_pick)
 		self.nav_reach(goal_pick)
 
-		self.send_request(orientation_rack)
+		self.send_request(orientation_rack, rack_no)
 		self.rack_attach(rack)
 		self.navigator.goToPose(goal_int)
 		self.nav_reach(goal_int)
 		self.navigator.goToPose(goal_drop)
 		self.nav_reach(goal_drop)
 		self.rack_detach(rack)
-
-		
-		
-	# def navigate_and_dock(self, goal_pick, goal_drop, orientation_rack, rack,bot_coordinates):
-	#     self.navigator.goToPose(goal_pick)
-	#     self.nav_reach(goal_pick)
-	#     # self.correct(bot_coordinates)
-	#     print("POSE----",self.robot_pose)
-	#     if self.flag == False:
-	#         self.send_request(orientation_rack)
-	#         self.rack_attach(rack)
-	#         self.navigator.goToPose(goal_drop)
-	#         self.nav_reach(goal_drop)
-	#         self.rack_detach(rack)        
-
 
 	def main(self):
 		package_name = 'ebot_nav2'
@@ -181,19 +167,27 @@ class NavigationController(Node):
 
 		rack_list = ["rack1", "rack2", "rack3"]
 
-		theta=self.normalize_angle(orientation_rack_3)
-		bot_pose=self.nav_coordinate(theta,rack3_coordinates[0],rack3_coordinates[1])
-		goal_theta= self.nav_theta(theta)
+		theta_1=self.normalize_angle(orientation_rack_1)
+		bot_pose_1=self.nav_coordinate(theta_1,rack1_coordinates[0],rack1_coordinates[1])
+		goal_theta_1= self.nav_theta(theta_1)
+
+		theta_2=self.normalize_angle(orientation_rack_2)
+		bot_pose_2=self.nav_coordinate(theta_2,rack2_coordinates[0],rack2_coordinates[1])
+		goal_theta_2= self.nav_theta(theta_2)
+
+		theta_3=self.normalize_angle(orientation_rack_3)
+		bot_pose_3=self.nav_coordinate(theta_3,rack3_coordinates[0],rack3_coordinates[1])
+		goal_theta_3= self.nav_theta(theta_3)
 
 		goal_pick_1 = PoseStamped()
 		goal_pick_1.header.frame_id = 'map'
 		goal_pick_1.header.stamp = self.navigator.get_clock().now().to_msg()
-		goal_pick_1.pose.position.x = bot_pose[0]
-		goal_pick_1.pose.position.y = bot_pose[1]
-		goal_pick_1.pose.orientation.x = goal_theta[0]
-		goal_pick_1.pose.orientation.y = goal_theta[1]
-		goal_pick_1.pose.orientation.z = goal_theta[2]
-		goal_pick_1.pose.orientation.w = goal_theta[3]
+		goal_pick_1.pose.position.x = bot_pose_1[0]
+		goal_pick_1.pose.position.y = bot_pose_1[1]
+		goal_pick_1.pose.orientation.x = goal_theta_1[0]
+		goal_pick_1.pose.orientation.y = goal_theta_1[1]
+		goal_pick_1.pose.orientation.z = goal_theta_1[2]
+		goal_pick_1.pose.orientation.w = goal_theta_1[3]
 
 		# Define other goals...
 		goal_drop_int = PoseStamped()
@@ -219,22 +213,22 @@ class NavigationController(Node):
 
 		goal_pick_2 = PoseStamped()
 		goal_pick_2.header.frame_id = 'map'
-		goal_pick_2.pose.position.x = 1.960219
-		goal_pick_2.pose.position.y = 2.118804
-		goal_pick_2.pose.orientation.x = 0.0
-		goal_pick_2.pose.orientation.y = 0.0
-		goal_pick_2.pose.orientation.z = 0.0
-		goal_pick_2.pose.orientation.w = 1.0
+		goal_pick_2.pose.position.x = bot_pose_2[0]
+		goal_pick_2.pose.position.y = bot_pose_2[1]
+		goal_pick_2.pose.orientation.x = goal_theta_2[0]
+		goal_pick_2.pose.orientation.y = goal_theta_2[1]
+		goal_pick_2.pose.orientation.z = goal_theta_2[2]
+		goal_pick_2.pose.orientation.w = goal_theta_2[3]
 
 		goal_pick_3 = PoseStamped()
 		goal_pick_3.header.frame_id = 'map'
 		goal_pick_3.header.stamp = self.navigator.get_clock().now().to_msg()
-		goal_pick_3.pose.position.x = 1.998759
-		goal_pick_3.pose.position.y = -7.102119
-		goal_pick_3.pose.orientation.x = 0.0
-		goal_pick_3.pose.orientation.y = 0.0
-		goal_pick_3.pose.orientation.z = 0.0
-		goal_pick_3.pose.orientation.w = 1.0
+		goal_pick_3.pose.position.x = bot_pose_3[0]		
+		goal_pick_3.pose.position.y = bot_pose_3[1]
+		goal_pick_3.pose.orientation.x = goal_theta_3[0]
+		goal_pick_3.pose.orientation.y = goal_theta_3[1]
+		goal_pick_3.pose.orientation.z = goal_theta_3[2]
+		goal_pick_3.pose.orientation.w = goal_theta_3[3]
 
 
 
@@ -264,7 +258,7 @@ class NavigationController(Node):
 		self.navigator.waitUntilNav2Active()
 
 		if package_id == 3:
-			self.navigate_and_dock(goal_pick_1, goal_drop_1, goal_drop_int, orientation_rack_3, rack_list[2],rack3_coordinates[0])
+			self.navigate_and_dock(goal_pick_3, goal_drop_3, goal_drop_int, orientation_rack_3, rack_list[2], "3")
 		elif package_id == 2:
 			# Navigate for package_id 2
 			pass
