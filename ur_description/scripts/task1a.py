@@ -117,6 +117,7 @@ def detect_aruco(image, depth):
 			contrast = 2.3  
 			image = cv2.addWeighted(image, contrast, np.zeros(image.shape, image.dtype), 0, brightness)
 			image = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
+			image = cv2.medianBlur(image, 5)
 			(corners, aruco_id, rejected) = cv2.aruco.detectMarkers(image, dictionary, parameters=arucoParams)
 			for i in range(len(aruco_id)):
 
