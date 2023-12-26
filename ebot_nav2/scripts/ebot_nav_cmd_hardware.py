@@ -6,17 +6,13 @@ import rclpy
 from rclpy.duration import Duration
 from rclpy.node import Node
 from ebot_docking.srv import DockSw
-from linkattacher_msgs.srv import AttachLink, DetachLink
+from usb_relay.srv import RelaySw
 import yaml
 import os
 from launch_ros.substitutions import FindPackageShare
 from ament_index_python.packages import get_package_share_directory
 from nav_msgs.msg import Odometry
 import time
-import math
-from geometry_msgs.msg import Quaternion
-from tf_transformations import euler_from_quaternion
-from tf_transformations import quaternion_from_euler
 
 class NavigationController(Node):
 
@@ -24,9 +20,9 @@ class NavigationController(Node):
 		rclpy.init()  # Initialize rclpy here
 		super().__init__('nav_dock')
 
+		self.attach = self.create_client(srv_type=RelaySw, srv_name='/usb_relay_sw')
+		
 
-		self.attach = self.create_client(srv_type=AttachLink, srv_name='/ATTACH_LINK')
-		self.detach = self.create_client(srv_type=DetachLink, srv_name='/DETACH_LINK')
 		self.client_docking = self.create_client(srv_type=DockSw, srv_name='dock_control')
 		self.vel_pub = self.create_publisher(Twist, "/cmd_vel", 10)
 		self.vel_msg = Twist()
@@ -45,11 +41,9 @@ class NavigationController(Node):
 		return future.result()
 
 	def rack_attach(self, rack):
-		req = AttachLink.Request()
-		req.model1_name = 'ebot'
-		req.link1_name = 'ebot_base_link'
-		req.model2_name = rack
-		req.link2_name = 'link'
+		req = RelaySw.Request()
+		req.relaychannel = 0
+		req.relaystate = True
 
 		atc = self.attach.call_async(req)
 		rclpy.spin_until_future_complete(self, atc)
@@ -59,39 +53,20 @@ class NavigationController(Node):
 		self.vel_msg.linear.x = 0.0
 		self.vel_pub.publish(self.vel_msg)
 		return atc.result()
-	
 
-	def normalize_angle(self, angle):
-		if angle < 0:
-			angle = math.pi + (math.pi + angle)
-		return angle
-	
-	def nav_coordinate(self,angle,x,y):
-		d=0.75
+	def rack_detach(self, rack):
+		req = RelaySw.Request()
+		req.relaychannel = 0
+		req.relaystate = False
 
-		self.a=x+(d*math.cos(angle))
-		self.b=y+(d*math.sin(angle))
-		return (self.a,self.b)
-	
-	def nav_theta(self,angle):
-		correct_angle=angle-1.57
-
-		if (correct_angle > 6.28):
-			correct_angle = correct_angle - 6.28
-		
-
-		if (correct_angle > 3.14):
-		
-			flag_angle = correct_angle - 3.14
-			correct_yaw = -3.14 + flag_angle
-		
-		else:
-			correct_yaw = correct_angle
-		
-		x,y,z,w=quaternion_from_euler(0,0,correct_yaw)
-		return (x,y,z,w)
-		
-
+		atc = self.attach.call_async(req)
+		rclpy.spin_until_future_complete(self, atc)
+		self.vel_msg.linear.x = 0.2
+		self.vel_pub.publish(self.vel_msg)
+		time.sleep(2)
+		self.vel_msg.linear.x = 0.0
+		self.vel_pub.publish(self.vel_msg)
+		return atc.result()
 
 
 
@@ -112,21 +87,7 @@ class NavigationController(Node):
 		else:
 			print('Goal has an invalid return status!')
 
-	def rack_detach(self, rack):
-		req = DetachLink.Request()
-		req.model1_name = 'ebot'
-		req.link1_name = 'ebot_base_link'
-		req.model2_name = rack
-		req.link2_name = 'link'
 
-		dtc = self.detach.call_async(req)
-		rclpy.spin_until_future_complete(self, dtc)
-		self.vel_msg.linear.x = 0.2
-		self.vel_pub.publish(self.vel_msg)
-		time.sleep(2)
-		self.vel_msg.linear.x = 0.0
-		self.vel_pub.publish(self.vel_msg)
-		return dtc.result()
 
 
 	def navigate_and_dock(self, goal_pick, goal_drop, goal_int, orientation_rack, rack,bot_coordinates):
@@ -141,7 +102,6 @@ class NavigationController(Node):
 		self.nav_reach(goal_drop)
 		self.rack_detach(rack)
 
-		
 		
 	# def navigate_and_dock(self, goal_pick, goal_drop, orientation_rack, rack,bot_coordinates):
 	#     self.navigator.goToPose(goal_pick)
@@ -178,22 +138,17 @@ class NavigationController(Node):
 		orientation_rack_1 = rack1_coordinates[2]
 		orientation_rack_2 = rack2_coordinates[2]
 		orientation_rack_3 = rack3_coordinates[2]
-
 		rack_list = ["rack1", "rack2", "rack3"]
-
-		theta=self.normalize_angle(orientation_rack_3)
-		bot_pose=self.nav_coordinate(theta,rack3_coordinates[0],rack3_coordinates[1])
-		goal_theta= self.nav_theta(theta)
 
 		goal_pick_1 = PoseStamped()
 		goal_pick_1.header.frame_id = 'map'
 		goal_pick_1.header.stamp = self.navigator.get_clock().now().to_msg()
-		goal_pick_1.pose.position.x = bot_pose[0]
-		goal_pick_1.pose.position.y = bot_pose[1]
-		goal_pick_1.pose.orientation.x = goal_theta[0]
-		goal_pick_1.pose.orientation.y = goal_theta[1]
-		goal_pick_1.pose.orientation.z = goal_theta[2]
-		goal_pick_1.pose.orientation.w = goal_theta[3]
+		goal_pick_1.pose.position.x = 0.108200
+		goal_pick_1.pose.position.y = rack1_coordinates[1]
+		goal_pick_1.pose.orientation.x = 0.0
+		goal_pick_1.pose.orientation.y = 0.0
+		goal_pick_1.pose.orientation.z = 0.7077099
+		goal_pick_1.pose.orientation.w = 0.7065031
 
 		# Define other goals...
 		goal_drop_int = PoseStamped()
@@ -264,7 +219,7 @@ class NavigationController(Node):
 		self.navigator.waitUntilNav2Active()
 
 		if package_id == 3:
-			self.navigate_and_dock(goal_pick_1, goal_drop_1, goal_drop_int, orientation_rack_3, rack_list[2],rack3_coordinates[0])
+			self.navigate_and_dock(goal_pick_3, goal_drop_1, goal_drop_int, orientation_rack_3, rack_list[2],rack3_coordinates[0])
 		elif package_id == 2:
 			# Navigate for package_id 2
 			pass
