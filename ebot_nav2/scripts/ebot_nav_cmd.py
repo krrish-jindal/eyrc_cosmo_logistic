@@ -166,7 +166,11 @@ class NavigationController(Node):
 		orientation_rack_3 = rack3_coordinates[2]
 
 		rack_list = ["rack1", "rack2", "rack3"]
-
+		print("-------------------")
+		print("RACK_1--",orientation_rack_1)
+		print("RACK_2--",orientation_rack_2)
+		print("RACK_3--",orientation_rack_3)
+		print("-------------------")
 		theta_1=self.normalize_angle(orientation_rack_1)
 		bot_pose_1=self.nav_coordinate(theta_1,rack1_coordinates[0],rack1_coordinates[1])
 		goal_theta_1= self.nav_theta(theta_1)
