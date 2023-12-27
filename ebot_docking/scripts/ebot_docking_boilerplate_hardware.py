@@ -145,7 +145,7 @@ class MyRobotDockingController(Node):
 			if self.orientation_dock ==True:
 				error = self.x_pose[int(self.rack_no) - 1][0] - self.robot_pose[0]
 				
-				if abs(self.rack3_coordinates[0] - self.robot_pose[0]) > 0.01:
+				if abs(self.x_pose[int(self.rack_no) - 1][0] - self.robot_pose[0]) > 0.01:
 					print(self.robot_pose[0],"---------44444444")
 					vel.linear.x = error
 					self.vel_pub.publish(vel)

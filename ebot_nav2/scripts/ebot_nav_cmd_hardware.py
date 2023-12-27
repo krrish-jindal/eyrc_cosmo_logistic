@@ -34,10 +34,11 @@ class NavigationController(Node):
 
 
 
-	def send_request(self, orientation):
+	def send_request(self, orientation, rack_no):
 		request_dock = DockSw.Request()
 		request_dock.orientation_dock = True
 		request_dock.orientation = orientation
+		request_dock.rack_no = rack_no
 		future = self.client_docking.call_async(request_dock)
 		rclpy.spin_until_future_complete(self, future)
 		return future.result()
@@ -121,11 +122,11 @@ class NavigationController(Node):
 
 
 
-	def navigate_and_dock(self, goal_pick, goal_drop, goal_int, orientation_rack, rack,bot_coordinates):
+	def navigate_and_dock(self, goal_pick, goal_drop, goal_int, orientation_rack, rack,rack_no):
 		self.navigator.goToPose(goal_pick)
 		self.nav_reach(goal_pick)
 
-		self.send_request(orientation_rack)
+		self.send_request(orientation_rack, rack_no)
 		self.rack_attach(rack)
 		self.navigator.goToPose(goal_int)
 		self.nav_reach(goal_int)
@@ -262,7 +263,7 @@ class NavigationController(Node):
 		self.navigator.waitUntilNav2Active()
 
 		if package_id == 3:
-			self.navigate_and_dock(goal_pick_3, goal_drop_3, goal_drop_int, orientation_rack_3, rack_list[2], "3")
+			self.navigate_and_dock(goal_pick_3, goal_drop_3, goal_drop_int, orientation_rack_3, "3")
 		elif package_id == 2:
 			# Navigate for package_id 2
 			pass
