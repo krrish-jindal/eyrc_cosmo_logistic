@@ -131,6 +131,8 @@ class NavigationController(Node):
 		if rack_no == "3":
 			self.navigator.goToPose(goal_int)
 			self.nav_reach(goal_int)
+		else:
+			pass
 		self.navigator.goToPose(goal_drop)
 		self.nav_reach(goal_drop)
 		self.rack_detach(rack)

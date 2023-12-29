@@ -150,13 +150,14 @@ class MyRobotDockingController(Node):
 				error = self.x_pose[int(self.rack_no) - 1][0] - self.robot_pose[0]
 				error2 = self.x_pose[int(self.rack_no) - 1][1] - self.robot_pose[1]
 				robot_head=str(self.robot_pose[2]/abs(self.robot_pose[2]))
-				print("robot_head------",error,error2)
+				print("ERRORS------",error,error2)
 
 
 
 
-#  set error range for distangce to avoide rack yaw
-#   X DIRECTION
+
+#   X DIRECTION POSS CORRECTION
+				
 				if 0.3 > abs(self.x_pose[int(self.rack_no) - 1][0] - self.robot_pose[0]) > 0.025  and robot_head== "1.0":
 
 					print(self.robot_pose[0],self.robot_pose[1],"---------44444444",abs(self.x_pose[int(self.rack_no) - 1][0] - self.robot_pose[0]))
@@ -172,9 +173,7 @@ class MyRobotDockingController(Node):
 
 
 
-
-
-#   Y DIRECTION
+#   Y DIRECTION POSS CORRECTION
 
 				elif 0.3 > abs(self.x_pose[int(self.rack_no) - 1][1] - self.robot_pose[1]) > 0.025  and robot_head== "1.0":
 					print(self.robot_pose[0],self.robot_pose[1],"---------33333333333",abs(self.x_pose[int(self.rack_no) - 1][1] - self.robot_pose[1]))
@@ -188,18 +187,29 @@ class MyRobotDockingController(Node):
 					self.vel_pub.publish(vel)
 
 
+#   DESIRE POSS REACH 
+					
 				else:
+
 					print("Before")
 					vel.linear.x = 0.0
 					self.vel_pub.publish(vel)
 					self.flag = 1
 					self.orientation_dock = False
 
+
+
+# START ORIENTATION CORRECTION
+					
 			elif self.flag == 1:
 				if abs(self.difference) > 0.02:
 					vel.angular.z = self.difference *0.6
 					self.vel_pub.publish(vel)
 
+
+
+#  ORIENTATION CORRECTED
+					
 				else:
 					vel.angular.z = 0.0
 					self.vel_pub.publish(vel)
@@ -208,32 +218,54 @@ class MyRobotDockingController(Node):
 					self.flag = 0
 
 					print("successfully oriented",self.linear_dock)
+			
+
+
+#  LINEAR DOCKING STARTS
+					
 			elif self.linear_dock == False:
 				print("FLAG---",self.flag)
 				print("++++++++++++++++++++++++++++++++++++")
+				self.usrdiff=self.usrleft_value-self.usrright_value
 				# print("L-",self.usrleft_value,"R-",self.usrright_value)
 				# print("Diff---",self.difference)
 				self.diff=self.usrleft_value-self.usrright_value
 
+
+
+
+#   CORRECTING ULTRA SONIC DISTANCE ERROR
+				
 				if self.usrleft_value > 0.15 and round(self.usrright_value,1) != round(self.usrleft_value,1):
+
+
+
+	#  CORRECTING ULRA SONIC ERROR 
+					
 					if abs(self.difference)<=0.02:
 						print(">>>>>=====>>>>>>")
-						vel.angular.z = 0.5 
+						vel.angular.z = self.usrdiff*0.2 
 
 						self.vel_pub.publish(vel)
+				
+	# CORRECTING RACK & BOT YAW ERROR
+
 					else:
-						vel.angular.z = -0.5
+						print(">>>>>>>>>>>>>>>")
+						vel.angular.z = self.difference*0.2
 						vel.linear.x = -0.2
 
 						self.vel_pub.publish(vel)
 
  
-					print(">>>>>>>>>>>>>>>")
 					# vel.linear.x = -self.usrleft_value * 0.4
 					self.orientation_dock = False
 					self.linear_dock = False
 
 
+
+#   NO ULTRA SONIC DISTANCE ERROR DIRECT DOCKING
+					
 				elif self.usrleft_value > 0.15 and round(self.usrright_value,1) == round(self.usrleft_value,1):
 					print("===============")
 					self.orientation_dock = False
@@ -243,6 +275,9 @@ class MyRobotDockingController(Node):
 					self.linear_dock = False
 
 
+
+#  DOCKING COMPLEATED
+					
 				else:
 					vel.linear.x = 0.0
 					self.vel_pub.publish(vel)
@@ -250,7 +285,6 @@ class MyRobotDockingController(Node):
 					self.linear_dock = True
 					self.is_docking = False
 					self.dock_aligned = True
-
 				
 
 	# Callback function for the DockControl service

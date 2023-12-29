@@ -61,6 +61,22 @@ class NavigationController(Node):
 		self.vel_pub.publish(self.vel_msg)
 		return atc.result()
 	
+	def rack_detach(self, rack):
+		req = DetachLink.Request()
+		req.model1_name = 'ebot'
+		req.link1_name = 'ebot_base_link'
+		req.model2_name = rack
+		req.link2_name = 'link'
+
+		dtc = self.detach.call_async(req)
+		rclpy.spin_until_future_complete(self, dtc)
+		self.vel_msg.linear.x = 0.2
+		self.vel_pub.publish(self.vel_msg)
+		time.sleep(2)
+		self.vel_msg.linear.x = 0.0
+		self.vel_pub.publish(self.vel_msg)
+		return dtc.result()
+	
 
 	def normalize_angle(self, angle):
 		if angle < 0:
@@ -113,23 +129,6 @@ class NavigationController(Node):
 		else:
 			print('Goal has an invalid return status!')
 
-	def rack_detach(self, rack):
-		req = DetachLink.Request()
-		req.model1_name = 'ebot'
-		req.link1_name = 'ebot_base_link'
-		req.model2_name = rack
-		req.link2_name = 'link'
-
-		dtc = self.detach.call_async(req)
-		rclpy.spin_until_future_complete(self, dtc)
-		self.vel_msg.linear.x = 0.2
-		self.vel_pub.publish(self.vel_msg)
-		time.sleep(2)
-		self.vel_msg.linear.x = 0.0
-		self.vel_pub.publish(self.vel_msg)
-		return dtc.result()
-
-
 	def navigate_and_dock(self, goal_pick, goal_drop, goal_int, orientation_rack, rack, rack_no):
 		self.navigator.goToPose(goal_pick)
 		self.nav_reach(goal_pick)
@@ -139,6 +138,8 @@ class NavigationController(Node):
 		if rack_no == "3":
 			self.navigator.goToPose(goal_int)
 			self.nav_reach(goal_int)
+		else:
+			pass
 
 		self.navigator.goToPose(goal_drop)
 		self.nav_reach(goal_drop)
@@ -264,9 +265,8 @@ class NavigationController(Node):
 		self.navigator.waitUntilNav2Active()
 
 		if package_id == 3:
-			# self.navigate_and_dock(goal_pick_2, goal_drop_3, goal_drop_int, orientation_rack_2, rack_list[2], "3")
 			self.navigate_and_dock(goal_pick_3, goal_drop_3, goal_drop_int, orientation_rack_3, rack_list[2], "3")
-			self.navigate_and_dock(goal_pick_1, goal_drop_3, goal_drop_int, orientation_rack_1, rack_list[0], "1")
+			self.navigate_and_dock(goal_pick_1, goal_drop_1, goal_drop_int, orientation_rack_1, rack_list[0], "1")
 			self.navigate_and_dock(goal_pick_2, goal_drop_2, goal_drop_int, orientation_rack_2, rack_list[1], "2")
 
 		elif package_id == 2:
