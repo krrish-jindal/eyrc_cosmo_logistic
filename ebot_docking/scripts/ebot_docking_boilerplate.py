@@ -54,7 +54,7 @@ class MyRobotDockingController(Node):
 
 		# Initialize all  flags and parameters here
 		self.is_docking = False
-		self.robot_pose = [0,0,0]         
+		self.robot_pose = [0,0,0] 
 		self.dock_aligned = False
 		self.kp = 1.0
 		self.normalize_yaw_bot = 0
@@ -133,23 +133,51 @@ class MyRobotDockingController(Node):
 
 			if self.orientation_dock ==True:
 
-				print("YAW------------YAW",abs(self.rack_yaw[int(self.rack_no)-1]))
+				print("YAW------------YAW",(self.rack_yaw[int(self.rack_no)-1]))
+				print("LIST---------",self.rack_yaw,self.rack_no)
+
 
 				error = self.x_pose[int(self.rack_no) - 1][0] - self.robot_pose[0]
-				
-				if abs(self.x_pose[int(self.rack_no) - 1][0] - self.robot_pose[0]) > 0.025 and abs(self.rack_yaw[int(self.rack_no)-1]) == 1.57:
+				error2 = self.x_pose[int(self.rack_no) - 1][1] - self.robot_pose[1]
+				robot_head=str(self.robot_pose[2]/abs(self.robot_pose[2]))
+				print("robot_head------",error,error2)
+
+
+
+
+#  set error range for distangce to avoide rack yaw
+#   X DIRECTION
+				if 0.3 > abs(self.x_pose[int(self.rack_no) - 1][0] - self.robot_pose[0]) > 0.025  and robot_head== "1.0":
 
 					print(self.robot_pose[0],self.robot_pose[1],"---------44444444",abs(self.x_pose[int(self.rack_no) - 1][0] - self.robot_pose[0]))
+					print("=============================================")
 
-					vel.linear.x = error *0.3
+					vel.linear.x = -error *0.4
 					self.vel_pub.publish(vel)
 
-				elif abs(self.x_pose[int(self.rack_no) - 1][1] - self.robot_pose[1]) > 0.025 and (abs(self.rack_yaw[int(self.rack_no)-1]) == 3.14 or abs(self.rack_yaw[int(self.rack_no)-1]) == 0.0 ):
+				elif 0.3 > abs(self.x_pose[int(self.rack_no) - 1][0] - self.robot_pose[0]) > 0.025 and robot_head== "-1.0":
+					print(self.robot_pose[0],self.robot_pose[1],"---------44444444",abs(self.x_pose[int(self.rack_no) - 1][0] - self.robot_pose[0]))
+					vel.linear.x = error *0.4
+					self.vel_pub.publish(vel)
+
+
+
+
+
+#   Y DIRECTION
+
+				elif 0.3 > abs(self.x_pose[int(self.rack_no) - 1][1] - self.robot_pose[1]) > 0.025  and robot_head== "1.0":
 					print(self.robot_pose[0],self.robot_pose[1],"---------33333333333",abs(self.x_pose[int(self.rack_no) - 1][1] - self.robot_pose[1]))
-
-
-					vel.linear.x = error *0.1
+					vel.linear.x = error2 *0.4
 					self.vel_pub.publish(vel)
+		
+				
+				elif 0.3 > abs(self.x_pose[int(self.rack_no) - 1][1] - self.robot_pose[1]) > 0.025  and robot_head== "-1.0":
+					print(self.robot_pose[0],self.robot_pose[1],"---------33333333333",abs(self.x_pose[int(self.rack_no) - 1][1] - self.robot_pose[1]))
+					vel.linear.x = -error2 *0.4
+					self.vel_pub.publish(vel)
+
+
 				else:
 
 					print("Before")

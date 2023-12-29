@@ -64,6 +64,7 @@ class MyRobotDockingController(Node):
 		package_name = 'ebot_nav2'
 		config = "config/config.yaml"
 		self.flag =0
+		self.orient_diff=0
 
 
 		ebot_nav2_dir = get_package_share_directory('ebot_nav2')
@@ -107,15 +108,6 @@ class MyRobotDockingController(Node):
 		_, _, yaw = euler_from_quaternion(orientation_list)
 		
 		self.robot_pose[2] = yaw
-# Add this function to your MyRobotDockingController class
-	def updated_odometry_callback(self, msg):
-		self.updated_robot_pose = [msg.pose.pose.position.x, msg.pose.pose.position.y, 0]
-		quaternion_array = msg.pose.pose.orientation
-		orientation_list = [quaternion_array.x, quaternion_array.y, quaternion_array.z, quaternion_array.w]
-		_, _, updated_yaw = euler_from_quaternion(orientation_list)
-		self.updated_robot_pose[2] = updated_yaw
-
-		# Print or log the updated robot pose
 
 	# Callback function for the left ultrasonic sensor
 	def ultrasonic_rl_callback(self, msg):
@@ -147,48 +139,41 @@ class MyRobotDockingController(Node):
 
 				error = self.x_pose[int(self.rack_no) - 1][0] - self.robot_pose[0]
 				error2 = self.x_pose[int(self.rack_no) - 1][1] - self.robot_pose[1]
+				self.orient_diff=self.robot_pose[2]-self.orientation
+				robot_head=str(self.orient_diff/abs(self.robot_pose[2]-self.orientation))
 
-				flag=1
-				flag2=1
 
-				if abs(self.x_pose[int(self.rack_no) - 1][0] - self.robot_pose[0]) > 0.025 and abs(self.rack_yaw[int(self.rack_no)-1]) == 1.57 and flag ==1:
+
+
+#  set error range for distangce to avoide rack yaw
+#   X DIRECTION
+				if abs(self.x_pose[int(self.rack_no) - 1][0] - self.robot_pose[0]) > 0.025 and abs(self.rack_yaw[int(self.rack_no)-1]) == 1.57 and robot_head== "+":
 
 					print(self.robot_pose[0],self.robot_pose[1],"---------44444444",abs(self.x_pose[int(self.rack_no) - 1][0] - self.robot_pose[0]))
-					pre_error=error
 					print("=============================================")
-					print("PRE----",pre_error,"ERROR-----",error)
 
 					print ("ROBOT_P---",self.robot_pose[0])
-					vel.linear.x = -error *0.3
-					self.vel_pub.publish(vel)
-					self.updated_odom_sub = self.create_subscription(Odometry, 'odom', self.updated_odometry_callback, 10)
-
-					error = self.x_pose[int(self.rack_no) - 1][0] - self.updated_robot_pose[0]
-					print("###########################")
-					print ("ROBOT_P---",self.updated_robot_pose[0])
-
-					print("PRE----",pre_error,"ERROR-----",error)
-					print("=============================================")
-
-					if pre_error<error:
-						flag=0
-
-				elif abs(self.x_pose[int(self.rack_no) - 1][0] - self.robot_pose[0]) > 0.025 and abs(self.rack_yaw[int(self.rack_no)-1]) == 1.57 and flag ==0:
-					print(self.robot_pose[0],self.robot_pose[1],"---------44444444",abs(self.x_pose[int(self.rack_no) - 1][0] - self.robot_pose[0]))
 					vel.linear.x = error *0.3
 					self.vel_pub.publish(vel)
 
-				elif abs(self.x_pose[int(self.rack_no) - 1][1] - self.robot_pose[1]) > 0.025 and (abs(self.rack_yaw[int(self.rack_no)-1]) == 3.14 or abs(self.rack_yaw[int(self.rack_no)-1]) == 0.0 ) and flag2 ==1:
+				elif abs(self.x_pose[int(self.rack_no) - 1][0] - self.robot_pose[0]) > 0.025 and abs(self.rack_yaw[int(self.rack_no)-1]) == 1.57 and robot_head== "-":
+					print(self.robot_pose[0],self.robot_pose[1],"---------44444444",abs(self.x_pose[int(self.rack_no) - 1][0] - self.robot_pose[0]))
+					vel.linear.x = -error *0.3
+					self.vel_pub.publish(vel)
+
+
+
+
+
+#   Y DIRECTION
+
+				elif abs(self.x_pose[int(self.rack_no) - 1][1] - self.robot_pose[1]) > 0.025 and (abs(self.rack_yaw[int(self.rack_no)-1]) == 3.14 or abs(self.rack_yaw[int(self.rack_no)-1]) == 0.0 ) and robot_head== "+":
 					print(self.robot_pose[0],self.robot_pose[1],"---------33333333333",abs(self.x_pose[int(self.rack_no) - 1][1] - self.robot_pose[1]))
-					pre_error2=error2
 					vel.linear.x = error2 *0.1
 					self.vel_pub.publish(vel)
-					error2 = self.x_pose[int(self.rack_no) - 1][1] - self.robot_pose[1]
-					if pre_error2<error2:
-						flag2=0
-
+		
 				
-				elif abs(self.x_pose[int(self.rack_no) - 1][1] - self.robot_pose[1]) > 0.025 and (abs(self.rack_yaw[int(self.rack_no)-1]) == 3.14 or abs(self.rack_yaw[int(self.rack_no)-1]) == 0.0 ) and flag2 ==0:
+				elif abs(self.x_pose[int(self.rack_no) - 1][1] - self.robot_pose[1]) > 0.025 and (abs(self.rack_yaw[int(self.rack_no)-1]) == 3.14 or abs(self.rack_yaw[int(self.rack_no)-1]) == 0.0 ) and robot_head== "-":
 					print(self.robot_pose[0],self.robot_pose[1],"---------33333333333",abs(self.x_pose[int(self.rack_no) - 1][1] - self.robot_pose[1]))
 					vel.linear.x = -error2 *0.1
 					self.vel_pub.publish(vel)

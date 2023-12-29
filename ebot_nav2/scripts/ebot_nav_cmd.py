@@ -136,8 +136,10 @@ class NavigationController(Node):
 
 		self.send_request(orientation_rack, rack_no)
 		self.rack_attach(rack)
-		self.navigator.goToPose(goal_int)
-		self.nav_reach(goal_int)
+		if rack_no == "3":
+			self.navigator.goToPose(goal_int)
+			self.nav_reach(goal_int)
+
 		self.navigator.goToPose(goal_drop)
 		self.nav_reach(goal_drop)
 		self.rack_detach(rack)
@@ -262,7 +264,11 @@ class NavigationController(Node):
 		self.navigator.waitUntilNav2Active()
 
 		if package_id == 3:
+			# self.navigate_and_dock(goal_pick_2, goal_drop_3, goal_drop_int, orientation_rack_2, rack_list[2], "3")
 			self.navigate_and_dock(goal_pick_3, goal_drop_3, goal_drop_int, orientation_rack_3, rack_list[2], "3")
+			self.navigate_and_dock(goal_pick_1, goal_drop_3, goal_drop_int, orientation_rack_1, rack_list[0], "1")
+			self.navigate_and_dock(goal_pick_2, goal_drop_2, goal_drop_int, orientation_rack_2, rack_list[1], "2")
+
 		elif package_id == 2:
 			# Navigate for package_id 2
 			pass
