@@ -60,12 +60,12 @@ class MyRobotDockingController(Node):
 		self.normalize_yaw_bot = 0
 		self.normalize_yaw_rack = 0
 		self.difference = 0
-		package_name = 'ebot_nav2'
+		package_name = 'ebot_real_nav2'
 		config = "config/config.yaml"
 		self.flag =0
 
 
-		ebot_nav2_dir = get_package_share_directory('ebot_nav2')
+		ebot_nav2_dir = get_package_share_directory('ebot_real_nav2')
 
 		pkg_share = FindPackageShare(package=package_name).find(package_name)
 		config_path = os.path.join(pkg_share, config)
