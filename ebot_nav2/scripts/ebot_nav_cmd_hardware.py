@@ -45,7 +45,7 @@ class NavigationController(Node):
 
 	def rack_attach(self, rack):
 		req = RelaySw.Request()
-		req.relaychannel = 0
+		req.relaychannel = True
 		req.relaystate = True
 
 		atc = self.attach.call_async(req)
@@ -59,7 +59,7 @@ class NavigationController(Node):
 
 	def rack_detach(self, rack):
 		req = RelaySw.Request()
-		req.relaychannel = 0
+		req.relaychannel = False
 		req.relaystate = False
 
 		atc = self.attach.call_async(req)
@@ -123,11 +123,12 @@ class NavigationController(Node):
 
 
 	def navigate_and_dock(self, goal_pick, goal_drop, goal_int, orientation_rack, rack,rack_no):
+		self.rack_attach(rack)
 		self.navigator.goToPose(goal_pick)
 		self.nav_reach(goal_pick)
 
 		self.send_request(orientation_rack, rack_no)
-		self.rack_attach(rack)
+		#self.rack_attach(rack)
 		if rack_no == "3":
 			self.navigator.goToPose(goal_int)
 			self.nav_reach(goal_int)
@@ -266,7 +267,7 @@ class NavigationController(Node):
 		self.navigator.waitUntilNav2Active()
 
 		if package_id == 3:
-			self.navigate_and_dock(goal_pick_3, goal_drop_3, goal_drop_int, orientation_rack_3, "3")
+			self.navigate_and_dock(goal_pick_3, goal_drop_3, goal_drop_int, orientation_rack_3, rack_list[2],"3")
 		elif package_id == 2:
 			# Navigate for package_id 2
 			pass
