@@ -180,7 +180,7 @@ class MyRobotDockingController(Node):
 # START ORIENTATION CORRECTION
 					
 			elif self.flag == 1:
-				if abs(self.difference) > 0.02:
+				if abs(self.difference) > 0.1:
 					vel.angular.z = self.difference *0.6
 					self.vel_pub.publish(vel)
 
