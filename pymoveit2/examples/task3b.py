@@ -311,16 +311,7 @@ def main():
     joint_positions_back = (enftf.get_parameter("joint_positions_back").get_parameter_value().double_array_value)
 
 
-    for i in range(len(position_r1)):
-            time.sleep(2)
-            enftf.moveit2.add_collision_mesh(
-                filepath=filepath1, id=mesh_rack_id[i], position=rack_pos[i], quat_xyzw=rack_quat[i], frame_id=ur5.base_link_name()
-            )
-            time.sleep(2)
 
-    enftf.moveit2.add_collision_mesh(
-    filepath=filepath2, id="base", position=base_pos[0], quat_xyzw=base_pos[1], frame_id=ur5.base_link_name())
-    
     while rclpy.ok():
         try:
             obj = enftf.obj_aruco[4:]

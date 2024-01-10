@@ -160,17 +160,7 @@ def detect_aruco(image, depth):
 			cv2.imshow("Aruco Detection", image)
 			cv2.waitKey(1)  # Wait for 1ms
 		
-			############ ADD YOUR CODE HERE ############
 
-			# INSTRUCTIONS & HELP : 
-
-			#	->  Convert input BGR image to GRAYSCALE for aruco detection
-
-
-			#   ->  Draw frame axes from coordinates received using pose estimation
-			#       ->  HINT: You may use 'cv2.drawFrameAxes'
-
-			############################################	
 			# cv2.destroyAllWindows()
 			return center_aruco_list, distance_from_rgb_list, angle_aruco_list, width_aruco_list, ids, tvec
 

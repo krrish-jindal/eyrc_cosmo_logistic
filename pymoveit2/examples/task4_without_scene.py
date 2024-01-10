@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+declare_parameter#!/usr/bin/env python3
 
 from os import path
 from threading import Thread
@@ -232,7 +232,7 @@ class endf(Node):
 
  #  ARM Move To BOX 
 
-                    if round((box49.transform.translation.y) - (tool0.transform.translation.y),4) > 0.004 or round((box49.transform.translation.x) - (tool0.transform.translation.x),4) > 0.004 or round((box49.transform.translation.z) - (tool0.transform.translation.z),4) > 0.004:
+                    if round((box49.transform.translation.y) - (tool0.transform.translation.y),4) > 0.004 and round((box49.transform.translation.x) - (tool0.transform.translation.x),4) > 0.004 and round((box49.transform.translation.z) - (tool0.transform.translation.z),4) > 0.004:
                         __twist_msg = TwistStamped()
                         __twist_msg.header.stamp = self.get_clock().now().to_msg()
                         __twist_msg.header.frame_id = ur5.base_link_name()
@@ -240,11 +240,13 @@ class endf(Node):
                         __twist_msg.twist.linear.x = round((box49.transform.translation.x) - (tool0.transform.translation.x),4) *2
                         __twist_msg.twist.linear.z = round((box49.transform.translation.z) - (tool0.transform.translation.z),4) *2
                         self.twist_pub.publish(__twist_msg)
+                        print("SERVO_START")
 
 #   Gripper ON
                     else :
                         print("trying to attach")
                         self.gripper_call(1)
+                        print("DONE")
                         break
 
                 while rclpy.ok():
@@ -252,8 +254,7 @@ class endf(Node):
                         box49 = self.tf_buffer.lookup_transform('base_link', f"obj_{box_no}", rclpy.time.Time())
                         tool0 = self.tf_buffer.lookup_transform('base_link', "tool0", rclpy.time.Time())
                         roll , pitch , yaw  = euler_from_quaternion([box49.transform.rotation.x, box49.transform.rotation.y, box49.transform.rotation.z, box49.transform.rotation.w])
-                        print(f"x = {round(tool0.transform.translation.x,2)}")
-                        print(f"y = {round(tool0.transform.translation.x,2)}")
+
 
                     except Exception as e:
                         print(e)
@@ -261,38 +262,37 @@ class endf(Node):
 
 #   ARM Adding Buffer POSS  &  Drop Location
                         
+                    if round(yaw) == ((round(yaw,2) >= 2.79 and round(yaw,2)<= 3.14) ) and (round(tool0.transform.translation.y,2) > 0.25):
                         
-                    if (round(yaw) == 2 or round(yaw) == 1) and (round(tool0.transform.translation.x,2) > 0.23):
-                        __twist_msg = TwistStamped()
-                        __twist_msg.header.stamp = self.get_clock().now().to_msg()
-                        __twist_msg.header.frame_id = ur5.base_link_name()
-                        __twist_msg.twist.linear.z = 0.1
-                        __twist_msg.twist.linear.x = -0.4
-                        self.twist_pub.publish(__twist_msg)
-                    elif (round(yaw) == 2 or round(yaw) == 1) and (round(tool0.transform.translation.x,2) <= 0.23):
-                        self.trajactory()
-                        self.moveit2.move_to_configuration(joint_positions_final_1)
-                        self.moveit2.wait_until_executed()
-                        self.moveit2.move_to_configuration(joint_positions_final_1)
-                        self.moveit2.wait_until_executed()
-                        break
-
-                    elif round(yaw) == None and (round(tool0.transform.translation.y,2) > 0.25):
                         __twist_msg = TwistStamped()
                         __twist_msg.header.stamp = self.get_clock().now().to_msg()
                         __twist_msg.header.frame_id = ur5.base_link_name()
                         __twist_msg.twist.linear.z = 0.1
                         __twist_msg.twist.linear.y = -0.2
                         self.twist_pub.publish(__twist_msg)
-                    elif round(yaw) == None and (round(tool0.transform.translation.y,2) <= 0.25):
+                    elif round(yaw) == ((round(yaw,2) >= 2.79 and round(yaw,2)<= 3.14) ) and (round(tool0.transform.translation.y,2) <= 0.25):
                         self.trajactory()
                         self.moveit2.move_to_configuration(joint_positions_final_2)
                         self.moveit2.wait_until_executed()
                         self.moveit2.move_to_configuration(joint_positions_final_2)
                         self.moveit2.wait_until_executed()
+                        break 
+                    elif (round(yaw,2) >= 1.39 and round(yaw,2)<=1.91) and (round(tool0.transform.translation.x,2) > 0.23):
+                        __twist_msg = TwistStamped()
+                        __twist_msg.header.stamp = self.get_clock().now().to_msg()
+                        __twist_msg.header.frame_id = ur5.base_link_name()
+                        __twist_msg.twist.linear.z = 0.1
+                        __twist_msg.twist.linear.x = -0.4
+                        self.twist_pub.publish(__twist_msg)
+                    elif (round(yaw,2) >= 1.39 and round(yaw,2)<=1.91) and (round(tool0.transform.translation.x,2) <= 0.23):
+                        self.trajactory()
+                        self.moveit2.move_to_configuration(joint_positions_final_1)
+                        self.moveit2.wait_until_executed()
+                        self.moveit2.move_to_configuration(joint_positions_final_1)
+                        self.moveit2.wait_until_executed()
                         break
-
-                    elif round(yaw) == 3 and (round(tool0.transform.translation.y,2) < -0.26):
+                    
+                    elif round(yaw,2) >= -0.17 and round(yaw,2) <=0.52 and (round(tool0.transform.translation.y,2) < -0.26):
                         __twist_msg = TwistStamped()
                         __twist_msg.header.stamp = self.get_clock().now().to_msg()
                         __twist_msg.header.frame_id = ur5.base_link_name()
@@ -300,7 +300,7 @@ class endf(Node):
                         __twist_msg.twist.linear.y = 0.2
                         __twist_msg.twist.linear.x = -0.2
                         self.twist_pub.publish(__twist_msg)
-                    elif round(yaw) == 3 and (round(tool0.transform.translation.y,2) >= -0.26):
+                    elif round(yaw,2) >= -0.17 and round(yaw,2) <=0.52 and (round(tool0.transform.translation.y,2) >= -0.26):
                         self.trajactory()
                         self.moveit2.move_to_configuration(joint_positions_back)
                         self.moveit2.wait_until_executed()
@@ -311,6 +311,10 @@ class endf(Node):
                         self.moveit2.move_to_configuration(joint_positions_final_3)
                         self.moveit2.wait_until_executed()
                         break
+
+
+
+                   
 
 
 
@@ -347,12 +351,12 @@ def main():
             print(obj)
             box = enftf.tf_buffer.lookup_transform('base_link', enftf.obj_aruco, rclpy.time.Time())
             roll , pitch , yaw  = euler_from_quaternion([box.transform.rotation.x, box.transform.rotation.y, box.transform.rotation.z, box.transform.rotation.w])
-            print(yaw)
+            print(round(yaw,2))
             
             if enftf.last_obj == obj:
                 pass
 
-            elif round(yaw) == 3:
+            elif round(yaw,2) >= -0.17 and round(yaw,2) <=0.52:
                 enftf.trajactory()
                 enftf.moveit2.move_to_configuration(joint_positions_negative)
                 enftf.moveit2.wait_until_executed()
@@ -364,7 +368,7 @@ def main():
                 enftf.moveit2.move_to_configuration(joint_positions_initial)
                 enftf.moveit2.wait_until_executed()
 
-            elif round(yaw) == None:
+            elif (round(yaw,2) >= 2.79 and round(yaw,2)<= 3.14) :
                 enftf.trajactory()
                 enftf.moveit2.move_to_configuration(joint_positions_positive)
                 enftf.moveit2.wait_until_executed()
@@ -374,7 +378,7 @@ def main():
                 enftf.moveit2.move_to_configuration(joint_positions_initial)
                 enftf.moveit2.wait_until_executed()
 
-            elif round(yaw) == 2 or round(yaw) == 1:
+            elif round(yaw,2) >= 1.39 and round(yaw,2)<=1.91:
                 enftf.servo_active()
                 enftf.servo(obj)
                 enftf.trajactory()
