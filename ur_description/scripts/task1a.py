@@ -72,21 +72,8 @@ def calculate_rectangle_area(coordinates):
 
 		return area, width 
 
+
 def detect_aruco(image, depth):
-		'''
-		Description:    Function to perform aruco detection and return each detail of aruco detected 
-						such as marker ID, distance, angle, width, center point location, etc.
-
-		Args:
-			image                   (Image):    Input image frame received from respective camera topic
-
-		Returns:
-			center_aruco_list       (list):     Center points of all aruco markers detected
-			distance_from_rgb_list  (list):     Distance value of each aruco markers detected from RGB camera
-			angle_aruco_list        (list):     Angle of all pose estimated for aruco marker
-			width_aruco_list        (list):     Width of all detected aruco markers
-			ids                     (list):     List of all aruco marker IDs detected in a single frame 
-		'''
 
 		center_aruco_list = []
 		distance_from_rgb_list = []
@@ -113,6 +100,13 @@ def detect_aruco(image, depth):
 
 		try:
 			arucoParams = cv2.aruco.DetectorParameters()
+
+#  IMAGE REFINEMENT
+
+			arucoParams.cornerRefinementMethod = cv2.aruco.CORNER_REFINE_SUBPIX  # Add this line
+			# arucoParams.cornerRefinementWinSize = 5  # You can adjust the window size if needed
+
+	
 			brightness = 10 
 			contrast = 2.3  
 			image = cv2.addWeighted(image, contrast, np.zeros(image.shape, image.dtype), 0, brightness)
@@ -291,6 +285,10 @@ class aruco_tf(Node):
 			list_rpy = []
 			# Add your image processing code here
 			for i in range(len(ids)):
+				print("Pitch_1---",angle_list[0][2])
+				print("Pitch_2---",angle_list[1][2])
+				print("Pitch_3---",angle_list[2][2])
+
 				aruco_id = ids[i]
 				distance = distance_list[i]
 				angle_aruco = angle_list[i]
@@ -373,7 +371,6 @@ class aruco_tf(Node):
 					transform_msg.transform.rotation.w = t.transform.rotation.w
 					roll_1 , pitch_1 , yaw_1  = euler_from_quaternion([t.transform.rotation.x, t.transform.rotation.y, t.transform.rotation.z, t.transform.rotation.w])
 					print(aruco_id)
-					print(yaw_1)
 					self.br.sendTransform(transform_msg)
 				except:
 					pass
