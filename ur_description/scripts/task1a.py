@@ -103,7 +103,7 @@ def detect_aruco(image, depth):
 
 #  IMAGE REFINEMENT
 
-			arucoParams.cornerRefinementMethod = cv2.aruco.CORNER_REFINE_SUBPIX  # Add this line
+			#arucoParams.cornerRefinementMethod = cv2.aruco.CORNER_REFINE_SUBPIX  # Add this line
 			# arucoParams.cornerRefinementWinSize = 5  # You can adjust the window size if needed
 
 	
@@ -169,8 +169,9 @@ def detect_aruco(image, depth):
 			############################################	
 			# cv2.destroyAllWindows()
 			return center_aruco_list, distance_from_rgb_list, angle_aruco_list, width_aruco_list, ids, tvec
-		except:
-			pass
+		except Exception as e:
+			print(e)
+			
 
 ##################### CLASS DEFINITION #######################
 
@@ -285,15 +286,13 @@ class aruco_tf(Node):
 			list_rpy = []
 			# Add your image processing code here
 			for i in range(len(ids)):
-				print("Pitch_1---",angle_list[0][2])
-				print("Pitch_2---",angle_list[1][2])
-				print("Pitch_3---",angle_list[2][2])
-
+				# print("Pitch_1---",angle_list[0][2])
+				# print("Pitch_2---",angle_list[1][2])
+				# print("Pitch_3---",angle_list[2][2])
+				print(i)
 				aruco_id = ids[i]
 				distance = distance_list[i]
 				angle_aruco = angle_list[i]
-				width_aruco = width_list[i]
-				center=center_list[i]
 				# print(angle_aruco)
 				angle_aruco = ((0.788*angle_aruco[2]) - ((angle_aruco[2]**2)/3160))
 				if round(angle_aruco) == 0:
@@ -372,9 +371,9 @@ class aruco_tf(Node):
 					roll_1 , pitch_1 , yaw_1  = euler_from_quaternion([t.transform.rotation.x, t.transform.rotation.y, t.transform.rotation.z, t.transform.rotation.w])
 					print(aruco_id)
 					self.br.sendTransform(transform_msg)
-				except:
+				except Exception as e:
 					pass
-		except:
+		except Exception as e:
 			pass
 
 

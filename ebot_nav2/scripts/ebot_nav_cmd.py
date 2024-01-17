@@ -273,10 +273,10 @@ class NavigationController(Node):
 		# Define other drop goals...
 
 		self.navigator.waitUntilNav2Active()
-
+		self.arm_request(rack_no = "3")
 		#self.navigate_and_dock(goal_pick_3, goal_drop_3, goal_drop_int, orientation_rack_3, rack_list[2], "3")
-		self.navigate_and_dock(goal_pick_1, goal_drop_1, goal_drop_int, orientation_rack_1, rack_list[0], "1")
-		self.navigate_and_dock(goal_pick_2, goal_drop_2, goal_drop_int, orientation_rack_2, rack_list[1], "2")
+		self.navigate_and_dock(goal_pick_1, goal_drop_2, goal_drop_int, orientation_rack_1, rack_list[0], "1")
+		self.navigate_and_dock(goal_pick_2, goal_drop_1, goal_drop_int, orientation_rack_2, rack_list[1], "2")
 
 		#elif package_id == 2:
 			# Navigate for package_id 2
