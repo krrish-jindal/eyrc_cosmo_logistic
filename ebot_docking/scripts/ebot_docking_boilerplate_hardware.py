@@ -141,6 +141,8 @@ class MyRobotDockingController(Node):
 			# ...
 			print("After")
 			self.difference = self.normalize_yaw_rack - self.normalize_yaw_bot
+			self.flag = 1
+			self.orientation_dock = False
 
 			if self.orientation_dock ==True:
 				print("YAW------------YAW",(self.rack_yaw[int(self.rack_no)-1]))
@@ -158,6 +160,7 @@ class MyRobotDockingController(Node):
 
 ##  X DIRECTION POSS CORRECTION
 				
+<<<<<<< Updated upstream
 				if 0.3 > abs(self.x_pose[int(self.rack_no) - 1][0] - self.robot_pose[0]) > 0.025  and robot_head== "1.0":
 
 					print(self.robot_pose[0],self.robot_pose[1],"---------44444444",abs(self.x_pose[int(self.rack_no) - 1][0] - self.robot_pose[0]))
@@ -169,6 +172,11 @@ class MyRobotDockingController(Node):
 				elif 0.3 > abs(self.x_pose[int(self.rack_no) - 1][0] - self.robot_pose[0]) > 0.025 and robot_head== "-1.0":
 					print(self.robot_pose[0],self.robot_pose[1],"---------44444444",abs(self.x_pose[int(self.rack_no) - 1][0] - self.robot_pose[0]))
 					vel.linear.x = error *0.4
+=======
+				if abs(self.rack3_coordinates[0] - self.robot_pose[0]) > 0.01:
+					print(self.robot_pose[0],"---------44444444")
+					vel.linear.x = error
+>>>>>>> Stashed changes
 					self.vel_pub.publish(vel)
 
 

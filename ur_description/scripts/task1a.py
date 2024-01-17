@@ -205,7 +205,7 @@ class aruco_tf(Node):
 
 		############ Constructor VARIABLES/OBJECTS ############
 
-		image_processing_rate = 2.5                                                   # rate of time to process image (seconds)
+		image_processing_rate = 2.5                                                 # rate of time to process image (seconds)
 		self.bridge = CvBridge()                                                        # initialise CvBridge object for image conversion
 		self.tf_buffer = tf2_ros.buffer.Buffer()                                        # buffer time used for listening transforms
 		self.listener = tf2_ros.TransformListener(self.tf_buffer, self)
