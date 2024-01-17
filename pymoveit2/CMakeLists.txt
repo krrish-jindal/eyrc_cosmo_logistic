@@ -17,6 +17,7 @@ install(PROGRAMS
     ${EXAMPLES_DIR}/ex_servo.py
     ${EXAMPLES_DIR}/task1b.py
     ${EXAMPLES_DIR}/task3b.py
+    ${EXAMPLES_DIR}/task4b_new.py
     DESTINATION lib/${PROJECT_NAME}
 )
 

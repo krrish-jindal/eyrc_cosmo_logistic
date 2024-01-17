@@ -11,6 +11,7 @@ from pymoveit2 import MoveIt2
 from pymoveit2.robots import ur5
 import math
 import sys
+from arm_picky.srv import ArmNew
 import tf2_ros
 from rclpy.node import Node
 from geometry_msgs.msg import TransformStamped
@@ -61,10 +62,12 @@ def truncate(f, n):
 class endf(Node):
     def __init__(self):
         super().__init__('move_ur5') 
+        self.callback_group = ReentrantCallbackGroup()
         self.tf_buffer = tf2_ros.buffer.Buffer()                                        # buffer time used for listening transforms
         self.listener = tf2_ros.TransformListener(self.tf_buffer, self)
         self.br = tf2_ros.TransformBroadcaster(self)
         self.switch = False
+        self.arm_srv = self.create_service(ArmNew, 'arm_control', self.arm_control_callback, callback_group=self.callback_group)
         self.tf_topic = self.create_subscription(TFMessage, '/tf', self.tf_cb , 10)
         self.twist_pub = self.create_publisher(TwistStamped, "/servo_node/delta_twist_cmds", 10)
         self.gripper_control = self.create_client(AttachLink, '/GripperMagnetON')
@@ -167,6 +170,13 @@ class endf(Node):
                     self.obj_aruco = data.transforms[0].child_frame_id
         except Exception as e:
             print(e)
+
+    def arm_control_callback(self, request, response):
+        self.variable_a = request.boom  
+        self.variable_b = request.whack
+        self.get_logger().info('Incoming request\na: %d b: %d' % (request.boom, request.whack))
+        response.cum = True
+        return response
 
     def servo(self, box_no):
         while rclpy.ok():
@@ -314,33 +324,45 @@ def main():
 
     while rclpy.ok():
         try:
+            
             obj = enftf.obj_aruco[4:]
             print(obj)
+            
             box = enftf.tf_buffer.lookup_transform('base_link', enftf.obj_aruco, rclpy.time.Time())
             roll , pitch , yaw  = euler_from_quaternion([box.transform.rotation.x, box.transform.rotation.y, box.transform.rotation.z, box.transform.rotation.w])
             print(yaw)
-            if enftf.last_obj == obj:
-                pass
-            elif round(yaw) == 0:
-                enftf.moveit2.move_to_configuration(joint_positions_negative)
-                enftf.moveit2.wait_until_executed()
-                enftf.servo(obj)
-                enftf.moveit2.move_to_configuration(joint_positions_back)
-                enftf.moveit2.wait_until_executed()
-                enftf.moveit2.move_to_configuration(joint_positions_initial)
-                enftf.moveit2.wait_until_executed()
-            elif round(yaw) == 3:
-                enftf.moveit2.move_to_configuration(joint_positions_positive)
-                enftf.moveit2.wait_until_executed()
-                enftf.servo(obj)
-                enftf.moveit2.move_to_configuration(joint_positions_initial)
-                enftf.moveit2.wait_until_executed()
-            elif round(yaw) == 2 or round(yaw) == 1:
-                enftf.servo(obj)
-                enftf.moveit2.move_to_configuration(joint_positions_initial)
-                enftf.moveit2.wait_until_executed()
-            enftf.last_obj = obj
+            if enftf.variable_a == True:
+                if round(yaw) == 0:
+                    enftf.trajactory()
+                    enftf.moveit2.move_to_configuration(joint_positions_negative)
+                    enftf.moveit2.wait_until_executed()
+                    enftf.servo_active()
+                    enftf.servo(obj)
+                    enftf.trajactory()
+                    enftf.moveit2.move_to_configuration(joint_positions_back)
+                    enftf.moveit2.wait_until_executed()
+                    enftf.moveit2.move_to_configuration(joint_positions_initial)
+                    enftf.moveit2.wait_until_executed()
+                    enftf.variable_a = False
 
+                elif round(yaw) == 3:
+                    enftf.trajactory()
+                    enftf.moveit2.move_to_configuration(joint_positions_positive)
+                    enftf.moveit2.wait_until_executed()
+                    enftf.servo_active()
+                    enftf.servo(obj)
+                    enftf.trajactory()
+                    enftf.moveit2.move_to_configuration(joint_positions_initial)
+                    enftf.moveit2.wait_until_executed()
+                    enftf.variable_a = False
+
+                elif round(yaw) == 2 or round(yaw) == 1:
+                    enftf.servo_active()
+                    enftf.servo(obj)
+                    enftf.trajactory()
+                    enftf.moveit2.move_to_configuration(joint_positions_initial)
+                    enftf.moveit2.wait_until_executed()
+                    enftf.variable_a = False
         except Exception as e:
             print(e)
 

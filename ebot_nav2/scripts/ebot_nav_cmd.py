@@ -9,6 +9,7 @@ from ebot_docking.srv import DockSw
 from linkattacher_msgs.srv import AttachLink, DetachLink
 import yaml
 import os
+from arm_picky.srv import ArmNew 
 from launch_ros.substitutions import FindPackageShare
 from ament_index_python.packages import get_package_share_directory
 from nav_msgs.msg import Odometry
@@ -27,6 +28,7 @@ class NavigationController(Node):
 
 		self.attach = self.create_client(srv_type=AttachLink, srv_name='/ATTACH_LINK')
 		self.detach = self.create_client(srv_type=DetachLink, srv_name='/DETACH_LINK')
+		self.arm_check = self.create_client(srv_type=ArmNew, srv_name='arm_control')
 		self.client_docking = self.create_client(srv_type=DockSw, srv_name='dock_control')
 		self.vel_pub = self.create_publisher(Twist, "/cmd_vel", 10)
 		self.vel_msg = Twist()
@@ -44,6 +46,14 @@ class NavigationController(Node):
 		future = self.client_docking.call_async(request_dock)
 		rclpy.spin_until_future_complete(self, future)
 		return future.result()
+
+	def arm_request(self, rack_no):
+		request_arm = ArmNew.Request()
+		request_arm.boom = True
+		request_arm.whack = str(rack_no)
+		gojo = self.arm_check.call_async(request_arm)
+		rclpy.spin_until_future_complete(self, gojo)
+		return gojo.result()
 
 	def rack_attach(self, rack):
 		req = AttachLink.Request()
@@ -132,7 +142,7 @@ class NavigationController(Node):
 	def navigate_and_dock(self, goal_pick, goal_drop, goal_int, orientation_rack, rack, rack_no):
 		self.navigator.goToPose(goal_pick)
 		self.nav_reach(goal_pick)
-
+		
 		self.send_request(orientation_rack, rack_no)
 		self.rack_attach(rack)
 		if rack_no == "3":
@@ -144,7 +154,7 @@ class NavigationController(Node):
 		self.navigator.goToPose(goal_drop)
 		self.nav_reach(goal_drop)
 		self.rack_detach(rack)
-
+		self.arm_request(rack_no = "3")
 	def main(self):
 		package_name = 'ebot_nav2'
 		config = "config/config.yaml"
@@ -264,17 +274,16 @@ class NavigationController(Node):
 
 		self.navigator.waitUntilNav2Active()
 
-		if package_id == 3:
-			self.navigate_and_dock(goal_pick_3, goal_drop_3, goal_drop_int, orientation_rack_3, rack_list[2], "3")
-			self.navigate_and_dock(goal_pick_1, goal_drop_1, goal_drop_int, orientation_rack_1, rack_list[0], "1")
-			self.navigate_and_dock(goal_pick_2, goal_drop_2, goal_drop_int, orientation_rack_2, rack_list[1], "2")
+		#self.navigate_and_dock(goal_pick_3, goal_drop_3, goal_drop_int, orientation_rack_3, rack_list[2], "3")
+		self.navigate_and_dock(goal_pick_1, goal_drop_1, goal_drop_int, orientation_rack_1, rack_list[0], "1")
+		self.navigate_and_dock(goal_pick_2, goal_drop_2, goal_drop_int, orientation_rack_2, rack_list[1], "2")
 
-		elif package_id == 2:
+		#elif package_id == 2:
 			# Navigate for package_id 2
-			pass
-		else:
+		#	pass
+		#else:
 			# Navigate for package_id 1
-			pass
+		#	pass
 
 		exit(0)
 

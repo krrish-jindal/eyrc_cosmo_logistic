@@ -164,7 +164,7 @@ def generate_launch_description():
     
     sim_launch = IncludeLaunchDescription(
         PythonLaunchDescriptionSource(
-            os.path.join(description_dir, 'launch', 'task3a.launch.py')))
+            os.path.join(description_dir, 'launch', 'task4c.launch.py')))
     
     moveit_spawn = IncludeLaunchDescription(
         PythonLaunchDescriptionSource(
