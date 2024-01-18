@@ -97,6 +97,18 @@ class endf(Node):
             3.15
         ],
     )
+
+    #         self.declare_parameter(
+    #     "joint_positions_positive_back",
+    #     [
+    #         1.57,
+    #         -2.39,
+    #         2.4,
+    #         -3.15,
+    #         -1.58,
+    #         3.15
+    #     ],
+    # )
         self.declare_parameter(
         "joint_positions_negative",
         [
@@ -232,7 +244,7 @@ class endf(Node):
 
  #  ARM Move To BOX 
 
-                    if round((box49.transform.translation.y) - (tool0.transform.translation.y),4) > 0.004 or round((box49.transform.translation.x) - (tool0.transform.translation.x),4) > 0.004 or round((box49.transform.translation.z) - (tool0.transform.translation.z),4) > 0.004:
+                    if round((box49.transform.translation.y) - (tool0.transform.translation.y),4) > 0.01 or round((box49.transform.translation.x) - (tool0.transform.translation.x),4) > 0.01 or round((box49.transform.translation.z) - (tool0.transform.translation.z),4) > 0.01:
                         __twist_msg = TwistStamped()
                         __twist_msg.header.stamp = self.get_clock().now().to_msg()
                         __twist_msg.header.frame_id = ur5.base_link_name()
@@ -253,7 +265,7 @@ class endf(Node):
                         tool0 = self.tf_buffer.lookup_transform('base_link', "tool0", rclpy.time.Time())
                         roll , pitch , yaw  = euler_from_quaternion([box49.transform.rotation.x, box49.transform.rotation.y, box49.transform.rotation.z, box49.transform.rotation.w])
                         print(f"x = {round(tool0.transform.translation.x,2)}")
-                        print(f"y = {round(tool0.transform.translation.x,2)}")
+                        print(f"y = {round(tool0.transform.translation.y,2)}")
 
                     except Exception as e:
                         print(e)
@@ -297,14 +309,17 @@ class endf(Node):
                         self.moveit2.wait_until_executed()
                         break
 
-                    elif round(yaw) ==((round(yaw,2) >= 2.79 and round(yaw,2)<= 3.14) or (round(yaw,2) >= -3.14 and round(yaw,2)<= -2.79)) and (round(tool0.transform.translation.y,2) > 0.25):
+                    elif round(yaw) ==((round(yaw,2) >= 2.79 and round(yaw,2)<= 3.14)) and (round(tool0.transform.translation.y,2) < 0.25):
+                        print("----------------")
                         __twist_msg = TwistStamped()
                         __twist_msg.header.stamp = self.get_clock().now().to_msg()
                         __twist_msg.header.frame_id = ur5.base_link_name()
                         __twist_msg.twist.linear.z = 0.1
                         __twist_msg.twist.linear.y = -0.2
                         self.twist_pub.publish(__twist_msg)
-                    elif round(yaw) == ((round(yaw,2) >= 2.79 and round(yaw,2)<= 3.14) or (round(yaw,2) >= -3.14 and round(yaw,2)<= -2.79)) and (round(tool0.transform.translation.y,2) <= 0.25):
+                    elif round(yaw) == ((round(yaw,2) >= 2.79 and round(yaw,2)<= 3.14)) and (round(tool0.transform.translation.y,2) >= 0.25):
+                        print("========")
+            
                         self.trajactory()
                         self.moveit2.move_to_configuration(joint_positions_final_2)
                         self.moveit2.wait_until_executed()

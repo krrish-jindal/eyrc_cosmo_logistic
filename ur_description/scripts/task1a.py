@@ -103,15 +103,15 @@ def detect_aruco(image, depth):
 
 #  IMAGE REFINEMENT
 
-			#arucoParams.cornerRefinementMethod = cv2.aruco.CORNER_REFINE_SUBPIX  # Add this line
-			# arucoParams.cornerRefinementWinSize = 5  # You can adjust the window size if needed
+			arucoParams.cornerRefinementMethod = cv2.aruco.CORNER_REFINE_SUBPIX  # Add this line
+			arucoParams.cornerRefinementWinSize = 8  # You can adjust the window size if needed
 
 	
-			brightness = 10 
-			contrast = 2.3  
+			brightness = 15 
+			contrast = 2.1  
 			image = cv2.addWeighted(image, contrast, np.zeros(image.shape, image.dtype), 0, brightness)
-			image = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
-			image = cv2.medianBlur(image, 5)
+			# image = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
+			# image = cv2.medianBlur(image, 5)
 			(corners, aruco_id, rejected) = cv2.aruco.detectMarkers(image, dictionary, parameters=arucoParams)
 			for i in range(len(aruco_id)):
 
@@ -281,7 +281,7 @@ class aruco_tf(Node):
 		focalY = 931.1829833984375
 		
 		try:
-			center_list, distance_list, angle_list, width_list, ids,tvec = detect_aruco(self.cv_image, self.depth_image)
+			center_list, distance_list, angle_list, width_list, ids,tvec = detect_aruco(self.gray, self.depth_image)
 			rpy = []
 			list_rpy = []
 			# Add your image processing code here
