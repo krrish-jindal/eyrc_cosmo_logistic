@@ -25,10 +25,10 @@ from ament_index_python.packages import get_package_share_directory
 
 from launch import LaunchDescription
 from launch.actions import (DeclareLaunchArgument, GroupAction,
-                            IncludeLaunchDescription, SetEnvironmentVariable)
+                            IncludeLaunchDescription, SetEnvironmentVariable, ExecuteProcess)
 from launch.conditions import IfCondition
 from launch.launch_description_sources import PythonLaunchDescriptionSource
-from launch.substitutions import LaunchConfiguration, PythonExpression
+from launch.substitutions import LaunchConfiguration, PythonExpression, FindExecutable
 from launch_ros.actions import Node
 from launch_ros.actions import PushRosNamespace
 from nav2_common.launch import RewrittenYaml
@@ -157,6 +157,16 @@ def generate_launch_description():
         arguments=['-d', rviz_config_file],
         output='screen')
     
+    # static_tf_publisher_cmd = Node(
+    #     package='tf2_ros',
+    #     executable='static_transform_publisher',
+    #     arguments=[
+    #         '-1.6', '-2.4', '-0.5',
+    #         '0', '0', '-3.14', # No rotation for static transform
+    #         'world', 'map'
+    #     ],
+    #     output='screen'
+    # )
     robot_localization_node = Node(
        package='robot_localization',
        executable='ekf_node',
@@ -237,6 +247,20 @@ def generate_launch_description():
 
 
     ld = LaunchDescription()
+    ld.add_action(
+        ExecuteProcess(
+            cmd=[
+                [
+                    FindExecutable(name="ros2"),
+                    " service call ",
+                    "/servo_node/start_servo ",
+                    "std_srvs/srv/Trigger ",
+                    "\"{}\"",
+                ]
+            ],
+            shell=True,
+        )
+    )
     ld.add_action(stdout_linebuf_envvar)
     ld.add_action(declare_namespace_cmd)
     ld.add_action(declare_use_namespace_cmd)
@@ -256,6 +280,7 @@ def generate_launch_description():
     ld.add_action(bringup_cmd_group)
     ld.add_action(docking_server)
     ld.add_action(opencv_node)
+    # ld.add_action(static_tf_publisher_cmd)
     # ld.add_action(ebot_nav_cmd)
 
 
