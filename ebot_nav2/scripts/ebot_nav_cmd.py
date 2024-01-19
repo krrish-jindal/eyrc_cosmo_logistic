@@ -118,9 +118,22 @@ class NavigationController(Node):
 		x,y,z,w=quaternion_from_euler(0,0,correct_yaw)
 		return (x,y,z,w)
 		
+	def move_with_linear_x(self,duration, linear_x, angular_z):
+		start_time = time.time()  # Get the current time
+		end_time = start_time + duration
+	
+		# Create a Twist message to control the linear.x (forward movement)
+		vel_msg = Twist()
+		vel_msg.linear.x = linear_x
+		vel_msg.angular.z = angular_z
 
+		while time.time() < end_time:
+			self.vel_pub.publish(vel_msg)  # Publish the Twist message to control the robot's movement
 
-
+		# Stop the forward movement by setting linear.x to 0
+		vel_msg.linear.x = 0.0
+		vel_msg.angular.z = 0.0
+		self.vel_pub.publish(vel_msg)
 
 	def nav_reach(self, goal):
 		while not self.navigator.isTaskComplete():
@@ -276,7 +289,9 @@ class NavigationController(Node):
 		self.arm_request(rack_no = "3")
 		#self.navigate_and_dock(goal_pick_3, goal_drop_3, goal_drop_int, orientation_rack_3, rack_list[2], "3")
 		self.navigate_and_dock(goal_pick_1, goal_drop_2, goal_drop_int, orientation_rack_1, rack_list[0], "1")
+		self.move_with_linear_x(2.0,1.0,0.0)
 		self.navigate_and_dock(goal_pick_2, goal_drop_1, goal_drop_int, orientation_rack_2, rack_list[1], "2")
+		self.move_with_linear_x(2.0,1.0,0.0)
 
 		#elif package_id == 2:
 			# Navigate for package_id 2
