@@ -40,6 +40,9 @@ def generate_launch_description():
     launch_dir = os.path.join(bringup_dir, 'launch')
     ebot_nav2_dir = get_package_share_directory('ebot_nav2')
     description_dir = get_package_share_directory('eyantra_warehouse')
+    py_moveit_dir = get_package_share_directory('pymoveit2')
+    opencv_dir = get_package_share_directory('ur_description')
+
 
     namespace = LaunchConfiguration('namespace')
     use_namespace = LaunchConfiguration('use_namespace')
@@ -132,12 +135,12 @@ def generate_launch_description():
         default_value=os.path.join(ebot_nav2_dir, 'rviz', 'nav2_default_view.rviz'),
         description='Full path to the RVIZ config file to use')
 
-    # docking_server = Node(
-    #     package='ebot_docking',
-    #     executable='ebot_docking_boilerplate.py',
-    #     name='docking',
-    #     output='screen'
-    # )
+    docking_server = Node(
+        package='ebot_docking',
+        executable='ebot_docking_boilerplate.py',
+        name='docking',
+        output='screen'
+    )
 
     # ebot_nav_cmd = Node(
     #     package='ebot_nav2',
@@ -160,7 +163,13 @@ def generate_launch_description():
        name='ekf_filter_node',
        output='screen',
        parameters=[os.path.join(ebot_nav2_dir, 'config/ekf.yaml'), {'use_sim_time': use_sim_time}]
-)
+)   
+    pymoveit2_node = Node(
+        package='pymoveit2',
+        executable='task3b.py',
+        name="task3b_moveit",
+        output="screen"
+    )
     
     sim_launch = IncludeLaunchDescription(
         PythonLaunchDescriptionSource(
@@ -219,6 +228,12 @@ def generate_launch_description():
                               'container_name': 'nav2_container'}.items()),
     ])
 
+    opencv_node = Node(
+        package='ur_description',
+        executable='task1a.py',
+        name='opencv',
+        output='screen'
+    )
 
 
     ld = LaunchDescription()
@@ -239,7 +254,8 @@ def generate_launch_description():
     ld.add_action(sim_launch)
     ld.add_action(moveit_spawn)
     ld.add_action(bringup_cmd_group)
-    # ld.add_action(docking_server)
+    ld.add_action(docking_server)
+    ld.add_action(opencv_node)
     # ld.add_action(ebot_nav_cmd)
 
 
