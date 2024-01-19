@@ -142,9 +142,9 @@ class endf(Node):
         self.declare_parameter(
         "joint_positions_final_2",
         [
-            0.541052,
-            -2.35619,
-            -0.698132,
+            -0.279,
+            -2.827,
+            -0.244,
             -3.14159,
             -1.58825,
             3.14159
@@ -161,6 +161,17 @@ class endf(Node):
             3.14159
         ],
     )
+        self.declare_parameter(
+            "joint_positions_back_2",
+            [
+                2.303,
+                -1.151,
+                1.064,
+                -3.14159,
+                -1.58825,
+                3.14159
+            ]
+        )
 
     def tf_cb(self, data):
         self.obj = "None"
@@ -176,7 +187,7 @@ class endf(Node):
         print("I am here")
         self.variable_a = request.boom  
         self.variable_b = request.whack
-        response.cum = True
+        response.reply = True
         return response
 
     def servo(self, box_no):
@@ -250,6 +261,10 @@ class endf(Node):
                         __twist_msg.twist.linear.y = -0.2
                         self.twist_pub.publish(__twist_msg)
                     elif round(yaw) == 3 and (round(tool0.transform.translation.y,2) <= 0.23):
+                        self.moveit2.move_to_configuration(joint_positions_initial)
+                        self.moveit2.wait_until_executed()
+                        self.moveit2.move_to_configuration(joint_positions_initial)
+                        self.moveit2.wait_until_executed()
                         self.moveit2.move_to_configuration(joint_positions_final_2)
                         self.moveit2.wait_until_executed()
                         self.moveit2.move_to_configuration(joint_positions_final_2)
