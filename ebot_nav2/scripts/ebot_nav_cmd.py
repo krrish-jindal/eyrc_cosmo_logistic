@@ -121,16 +121,22 @@ class NavigationController(Node):
 	def move_with_linear_x(self,duration, linear_x, angular_z):
 		start_time = time.time()  # Get the current time
 		end_time = start_time + duration
-	
+		end_time2 = end_time + duration
+
 		# Create a Twist message to control the linear.x (forward movement)
 		vel_msg = Twist()
+
 		vel_msg.linear.x = linear_x
-		vel_msg.angular.z = angular_z
 
 		while time.time() < end_time:
 			self.vel_pub.publish(vel_msg)  # Publish the Twist message to control the robot's movement
 
-		# Stop the forward movement by setting linear.x to 0
+		vel_msg.linear.x = 0.0
+		vel_msg.angular.z = angular_z
+
+		while time.time() < end_time2:
+			self.vel_pub.publish(vel_msg) 
+
 		vel_msg.linear.x = 0.0
 		vel_msg.angular.z = 0.0
 		self.vel_pub.publish(vel_msg)
@@ -158,11 +164,9 @@ class NavigationController(Node):
 		
 		self.send_request(orientation_rack, rack_no)
 		self.rack_attach(rack)
-		if rack_no == "3":
-			self.navigator.goToPose(goal_int)
-			self.nav_reach(goal_int)
-		else:
-			pass
+		self.navigator.goToPose(goal_int)
+		self.nav_reach(goal_int)
+
 
 		self.navigator.goToPose(goal_drop)
 		self.nav_reach(goal_drop)
@@ -219,16 +223,25 @@ class NavigationController(Node):
 		goal_pick_1.pose.orientation.z = goal_theta_1[2]
 		goal_pick_1.pose.orientation.w = goal_theta_1[3]
 
-		# Define other goals...
-		goal_drop_int = PoseStamped()
-		goal_drop_int.header.frame_id = 'map'
-		goal_drop_int.header.stamp = self.navigator.get_clock().now().to_msg()
-		goal_drop_int.pose.position.x = -0.2
-		goal_drop_int.pose.position.y = -2.5
-		goal_drop_int.pose.orientation.x = 0.0
-		goal_drop_int.pose.orientation.y = 0.0
-		goal_drop_int.pose.orientation.z = 0.9999997
-		goal_drop_int.pose.orientation.w = 0.0007963
+		goal_drop_int_1 = PoseStamped()
+		goal_drop_int_1.header.frame_id = 'map'
+		goal_drop_int_1.header.stamp = self.navigator.get_clock().now().to_msg()
+		goal_drop_int_1.pose.position.x = -0.2
+		goal_drop_int_1.pose.position.y = -2.5
+		goal_drop_int_1.pose.orientation.x = 0.0
+		goal_drop_int_1.pose.orientation.y = 0.0
+		goal_drop_int_1.pose.orientation.z = 0.9999997
+		goal_drop_int_1.pose.orientation.w = 0.0007963
+
+		goal_drop_int_2 = PoseStamped()
+		goal_drop_int_2.header.frame_id = 'map'
+		goal_drop_int_2.header.stamp = self.navigator.get_clock().now().to_msg()
+		goal_drop_int_2.pose.position.x = 1.65
+		goal_drop_int_2.pose.position.y = -4.5
+		goal_drop_int_2.pose.orientation.x = 0.0
+		goal_drop_int_2.pose.orientation.y = 0.0
+		goal_drop_int_2.pose.orientation.z =  -0.70398
+		goal_drop_int_2.pose.orientation.w =  0.7102198
 
 		goal_drop_1 = PoseStamped()
 		goal_drop_1.header.frame_id = 'map'
@@ -265,8 +278,8 @@ class NavigationController(Node):
 		goal_drop_2 = PoseStamped()
 		goal_drop_2.header.frame_id = 'map'
 		goal_drop_2.header.stamp = self.navigator.get_clock().now().to_msg()
-		goal_drop_2.pose.position.x = 1.650000
-		goal_drop_2.pose.position.y = -3.684832
+		goal_drop_2.pose.position.x = 1.65
+		goal_drop_2.pose.position.y = -3.1
 		goal_drop_2.pose.orientation.x = 0.0
 		goal_drop_2.pose.orientation.y = 0.0
 		goal_drop_2.pose.orientation.z =  -0.70398
@@ -288,10 +301,10 @@ class NavigationController(Node):
 		self.navigator.waitUntilNav2Active()
 		self.arm_request(rack_no = "3")
 		#self.navigate_and_dock(goal_pick_3, goal_drop_3, goal_drop_int, orientation_rack_3, rack_list[2], "3")
-		self.navigate_and_dock(goal_pick_1, goal_drop_2, goal_drop_int, orientation_rack_1, rack_list[0], "1")
-		self.move_with_linear_x(2.0,1.0,0.0)
-		self.navigate_and_dock(goal_pick_2, goal_drop_1, goal_drop_int, orientation_rack_2, rack_list[1], "2")
-		self.move_with_linear_x(2.0,1.0,0.0)
+		self.navigate_and_dock(goal_pick_1, goal_drop_2, goal_drop_int_2, orientation_rack_1, rack_list[0], "1")
+		self.move_with_linear_x(2.0,0.5,-0.95)
+		self.navigate_and_dock(goal_pick_2, goal_drop_1, goal_drop_int_1, orientation_rack_2, rack_list[1], "2")
+		self.move_with_linear_x(2.0,0.5,-0.95)
 
 		#elif package_id == 2:
 			# Navigate for package_id 2
