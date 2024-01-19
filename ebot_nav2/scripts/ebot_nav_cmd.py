@@ -103,19 +103,19 @@ class NavigationController(Node):
 	def nav_theta(self,angle):
 		correct_angle=angle-1.57
 
-		if (correct_angle > 6.28):
-			correct_angle = correct_angle - 6.28
+		# if (correct_angle > 6.28):
+		# 	correct_angle = correct_angle - 6.28
 		
 
-		if (correct_angle > 3.14):
+		# if (correct_angle > 3.14):
 		
-			flag_angle = correct_angle - 3.14
-			correct_yaw = -3.14 + flag_angle
+		# 	flag_angle = correct_angle - 3.14
+		# 	correct_yaw = -3.14 + flag_angle
 		
-		else:
-			correct_yaw = correct_angle
+		# else:
+		# 	correct_yaw = correct_angle
 		
-		x,y,z,w=quaternion_from_euler(0,0,correct_yaw)
+		x,y,z,w=quaternion_from_euler(0,0,correct_angle)
 		return (x,y,z,w)
 		
 	def move_with_linear_x(self,duration, linear_x, angular_z):
@@ -203,15 +203,15 @@ class NavigationController(Node):
 		print("-------------------")
 		theta_1=self.normalize_angle(orientation_rack_1)
 		bot_pose_1=self.nav_coordinate(theta_1,rack1_coordinates[0],rack1_coordinates[1])
-		goal_theta_1= self.nav_theta(theta_1)
+		goal_theta_1= self.nav_theta(orientation_rack_1)
 
 		theta_2=self.normalize_angle(orientation_rack_2)
 		bot_pose_2=self.nav_coordinate(theta_2,rack2_coordinates[0],rack2_coordinates[1])
-		goal_theta_2= self.nav_theta(theta_2)
+		goal_theta_2= self.nav_theta(orientation_rack_2)
 
 		theta_3=self.normalize_angle(orientation_rack_3)
 		bot_pose_3=self.nav_coordinate(theta_3,rack3_coordinates[0],rack3_coordinates[1])
-		goal_theta_3= self.nav_theta(theta_3)
+		goal_theta_3= self.nav_theta(orientation_rack_3)
 
 		goal_pick_1 = PoseStamped()
 		goal_pick_1.header.frame_id = 'map'
