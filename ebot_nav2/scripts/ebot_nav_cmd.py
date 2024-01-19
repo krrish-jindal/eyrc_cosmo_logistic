@@ -227,7 +227,7 @@ class NavigationController(Node):
 		goal_drop_int_1.header.frame_id = 'map'
 		goal_drop_int_1.header.stamp = self.navigator.get_clock().now().to_msg()
 		goal_drop_int_1.pose.position.x = -0.2
-		goal_drop_int_1.pose.position.y = -2.5
+		goal_drop_int_1.pose.position.y = -2.7
 		goal_drop_int_1.pose.orientation.x = 0.0
 		goal_drop_int_1.pose.orientation.y = 0.0
 		goal_drop_int_1.pose.orientation.z = 0.9999997
@@ -246,8 +246,8 @@ class NavigationController(Node):
 		goal_drop_1 = PoseStamped()
 		goal_drop_1.header.frame_id = 'map'
 		goal_drop_1.header.stamp = self.navigator.get_clock().now().to_msg()
-		goal_drop_1.pose.position.x = 1.15
-		goal_drop_1.pose.position.y = -2.455
+		goal_drop_1.pose.position.x = 0.99
+		goal_drop_1.pose.position.y = -2.6
 		goal_drop_1.pose.orientation.x = 0.0
 		goal_drop_1.pose.orientation.y = 0.0
 		goal_drop_1.pose.orientation.z = 0.9999997
