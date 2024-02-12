@@ -66,7 +66,6 @@ class endf(Node):
         self.__contolMSwitch = self.create_client(SwitchController, "/controller_manager/switch_controller")
         self.tf_topic = self.create_subscription(TFMessage, '/tf', self.tf_cb , 10)
         self.twist_pub = self.create_publisher(TwistStamped, "/servo_node/delta_twist_cmds", 10)
-        self.pz = 0
         self.obj_aruco = "None"
         self.last_obj = "None"
 
@@ -272,14 +271,20 @@ class endf(Node):
 
 #   ARM Adding Buffer POSS  &  Drop Location
                         
-                    if self.variable_b == "2" and (round(tool0.transform.translation.y,2) > 0.25):
+
+
+
+#  LEFT RACK  
+
+
+                    if self.variable_b == "3" and (round(tool0.transform.translation.y,2) > 0.25):
                         __twist_msg = TwistStamped()
                         __twist_msg.header.stamp = self.get_clock().now().to_msg()
                         __twist_msg.header.frame_id = ur5.base_link_name()
                         __twist_msg.twist.linear.z = 0.1
                         __twist_msg.twist.linear.y = -0.2
                         self.twist_pub.publish(__twist_msg)
-                    elif self.variable_b == "2" and (round(tool0.transform.translation.y,2) <= 0.25):
+                    elif self.variable_b == "3" and (round(tool0.transform.translation.y,2) <= 0.25):
                         self.trajactory()
                         self.moveit2.move_to_configuration(joint_positions_initial)
                         self.moveit2.wait_until_executed()
@@ -291,33 +296,43 @@ class endf(Node):
                         self.moveit2.wait_until_executed()
                         break 
 
-                    elif self.variable_b == "1" and (round(tool0.transform.translation.x,2) > 0.23):
+
+#  FRONT RACK
+                    
+                    elif self.variable_b == "2" and (round(tool0.transform.translation.x,2) > 0.23):
                         __twist_msg = TwistStamped()
                         __twist_msg.header.stamp = self.get_clock().now().to_msg()
                         __twist_msg.header.frame_id = ur5.base_link_name()
                         __twist_msg.twist.linear.z = 0.1
                         __twist_msg.twist.linear.x = -0.4
                         self.twist_pub.publish(__twist_msg)
-                    elif self.variable_b == "1" and (round(tool0.transform.translation.x,2) <= 0.23):
+                    elif self.variable_b == "2" and (round(tool0.transform.translation.x,2) <= 0.23):
                         self.trajactory()
                         self.moveit2.move_to_configuration(joint_positions_final_1)
                         self.moveit2.wait_until_executed()
                         self.moveit2.move_to_configuration(joint_positions_final_1)
                         self.moveit2.wait_until_executed()
                         break
-                    
-                    elif self.variable_b == "0" and (round(tool0.transform.translation.x,2) > 0.23):
+
+
+ #  RIGHT RACK 
+
+                    elif self.variable_b == "1" and (round(tool0.transform.translation.y,2) < -0.26):
                         __twist_msg = TwistStamped()
                         __twist_msg.header.stamp = self.get_clock().now().to_msg()
                         __twist_msg.header.frame_id = ur5.base_link_name()
                         __twist_msg.twist.linear.z = 0.4
                         __twist_msg.twist.linear.x = -0.4
                         self.twist_pub.publish(__twist_msg)
-                    elif self.variable_b == "0" and (round(tool0.transform.translation.x,2) <= 0.23):
+                    elif self.variable_b == "1" and (round(tool0.transform.translation.y,2) >= -0.26):
                         self.trajactory()
-                        self.moveit2.move_to_configuration(joint_positions_final_1)
+                        self.moveit2.move_to_configuration(joint_positions_back)
                         self.moveit2.wait_until_executed()
-                        self.moveit2.move_to_configuration(joint_positions_final_1)
+                        self.moveit2.move_to_configuration(joint_positions_back)
+                        self.moveit2.wait_until_executed()
+                        self.moveit2.move_to_configuration(joint_positions_final_3)
+                        self.moveit2.wait_until_executed()
+                        self.moveit2.move_to_configuration(joint_positions_final_3)
                         self.moveit2.wait_until_executed()
                         break
 
@@ -366,7 +381,7 @@ def main():
 
                 print("You are my special")
 
-                if enftf.variable_b == "0":
+                if enftf.variable_b == "3":
                     enftf.trajactory()
                     enftf.moveit2.move_to_configuration(joint_positions_negative)
                     enftf.moveit2.wait_until_executed()
@@ -379,7 +394,7 @@ def main():
                     enftf.moveit2.wait_until_executed()
                     enftf.variable_a == False
 
-                elif enftf.variable_b == "2":
+                elif enftf.variable_b == "1":
                     enftf.trajactory()
                     enftf.moveit2.move_to_configuration(joint_positions_positive)
                     enftf.moveit2.wait_until_executed()
@@ -390,7 +405,7 @@ def main():
                     enftf.moveit2.wait_until_executed()
                     enftf.variable_a == False
 
-                elif enftf.variable_b == "1":
+                elif enftf.variable_b == "2":
                     enftf.servo_active()
                     enftf.servo(obj)
                     enftf.trajactory()

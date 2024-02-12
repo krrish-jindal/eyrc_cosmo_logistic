@@ -43,6 +43,7 @@ install(
     maps
     params
     rviz
+    scripts
   DESTINATION
     share/${PROJECT_NAME}/
 )

@@ -152,7 +152,6 @@ class MyRobotDockingController(Node):
 				robot_head=str(self.robot_pose[2]/abs(self.robot_pose[2]))
 				print("ERRORS------",error,error2)
 
-# [0.9, 2.04, 0.0]
 
 
 

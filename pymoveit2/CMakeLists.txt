@@ -11,13 +11,7 @@ ament_python_install_package(pymoveit2)
 # Install examples
 set(EXAMPLES_DIR examples)
 install(PROGRAMS
-    ${EXAMPLES_DIR}/ex_collision_object.py
-    ${EXAMPLES_DIR}/ex_joint_goal.py
-    ${EXAMPLES_DIR}/ex_pose_goal.py
-    ${EXAMPLES_DIR}/ex_servo.py
-    ${EXAMPLES_DIR}/task1b.py
-    ${EXAMPLES_DIR}/task3b.py
-    ${EXAMPLES_DIR}/task4b_new.py
+    ${EXAMPLES_DIR}/task5_movit_sim.py
     DESTINATION lib/${PROJECT_NAME}
 )
 

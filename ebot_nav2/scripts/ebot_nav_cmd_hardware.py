@@ -106,6 +106,30 @@ class NavigationController(Node):
 		x,y,z,w=quaternion_from_euler(0,0,correct_angle)
 		return (x,y,z,w)
 	
+	
+	def move_with_linear_x(self,duration, linear_x, angular_z):
+		start_time = time.time()  # Get the current time
+		end_time = start_time + duration
+		end_time2 = end_time + duration
+
+		# Create a Twist message to control the linear.x (forward movement)
+		vel_msg = Twist()
+
+		vel_msg.linear.x = linear_x
+
+		while time.time() < end_time:
+			self.vel_pub.publish(vel_msg)  # Publish the Twist message to control the robot's movement
+
+		vel_msg.linear.x = 0.0
+		vel_msg.angular.z = angular_z
+
+		while time.time() < end_time2:
+			self.vel_pub.publish(vel_msg) 
+
+		vel_msg.linear.x = 0.0
+		vel_msg.angular.z = 0.0
+		self.vel_pub.publish(vel_msg)
+	
 
 	def nav_reach(self, goal):
 		while not self.navigator.isTaskComplete():
@@ -139,21 +163,8 @@ class NavigationController(Node):
 		self.navigator.goToPose(goal_drop)
 		self.nav_reach(goal_drop)
 		self.rack_detach(rack)
-		self.arm_request(rack_no = "3")
-
-
-		
-	# def navigate_and_dock(self, goal_pick, goal_drop, orientation_rack, rack,bot_coordinates):
-	#     self.navigator.goToPose(goal_pick)
-	#     self.nav_reach(goal_pick)
-	#     # self.correct(bot_coordinates)
-	#     print("POSE----",self.robot_pose)
-	#     if self.flag == False:
-	#         self.send_request(orientation_rack)
-	#         self.rack_attach(rack)
-	#         self.navigator.goToPose(goal_drop)
-	#         self.nav_reach(goal_drop)
-	#         self.rack_detach(rack)        
+		self.arm_request(rack_no = str(rack_no))
+    
 
 
 	def main(self):
@@ -305,11 +316,13 @@ class NavigationController(Node):
 
 		self.navigator.waitUntilNav2Active()
 
-		self.arm_request(rack_no = "0")
-		self.navigate_and_dock(goal_pick_3, goal_drop_2, goal_drop_init_2, orientation_rack_3, rack_list[2], "3")
 		self.arm_request(rack_no = "1")
+		self.navigate_and_dock(goal_pick_3, goal_drop_3, goal_drop_init_3, orientation_rack_3, rack_list[2], "3")
+		self.move_with_linear_x(2.0,0.5,-0.95)
 
-
+		self.navigate_and_dock(goal_pick_2, goal_drop_2, goal_drop_init_2, orientation_rack_2, rack_list[1], "2")
+		self.move_with_linear_x(2.0,0.5,-0.95)
+		
 		exit(0)
 
 if __name__ == '__main__':

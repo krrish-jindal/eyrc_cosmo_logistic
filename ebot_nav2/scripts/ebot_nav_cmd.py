@@ -50,7 +50,7 @@ class NavigationController(Node):
 	def arm_request(self, rack_no):
 		request_arm = ArmNew.Request()
 		request_arm.boom = True
-		request_arm.whack = str(rack_no)
+		request_arm.rack_no = str(rack_no)
 		gojo = self.arm_check.call_async(request_arm)
 		rclpy.spin_until_future_complete(self, gojo)
 		return gojo.result()
@@ -93,28 +93,24 @@ class NavigationController(Node):
 			angle = math.pi + (math.pi + angle)
 		return angle
 	
-	def nav_coordinate(self,angle,x,y):
-		d=0.75
+	def nav_coordinate(self,angle,x,y,poss):
+
+		if poss=="final":
+			d=0.75
+		else:
+			d=0.95
 
 		self.a=x+(d*math.cos(angle))
 		self.b=y+(d*math.sin(angle))
 		return (self.a,self.b)
 	
-	def nav_theta(self,angle):
-		correct_angle=angle-1.57
+	
+	def nav_theta(self,angle,obj_type):
 
-		# if (correct_angle > 6.28):
-		# 	correct_angle = correct_angle - 6.28
-		
-
-		# if (correct_angle > 3.14):
-		
-		# 	flag_angle = correct_angle - 3.14
-		# 	correct_yaw = -3.14 + flag_angle
-		
-		# else:
-		# 	correct_yaw = correct_angle
-		
+		if obj_type =="rack":
+			correct_angle=angle-1.57
+		else:
+			correct_angle=angle
 		x,y,z,w=quaternion_from_euler(0,0,correct_angle)
 		return (x,y,z,w)
 		
@@ -171,7 +167,9 @@ class NavigationController(Node):
 		self.navigator.goToPose(goal_drop)
 		self.nav_reach(goal_drop)
 		self.rack_detach(rack)
-		self.arm_request(rack_no = "3")
+		self.arm_request(rack_no = str(rack_no))
+
+
 	def main(self):
 		package_name = 'ebot_nav2'
 		config = "config/config_sim.yaml"
@@ -185,15 +183,18 @@ class NavigationController(Node):
 
 		data_dict = yaml.safe_load(pos_rack)
 
+
 		positions = data_dict['position']
 		rack1_coordinates = positions[0]['rack1']
 		rack2_coordinates = positions[1]['rack2']
 		rack3_coordinates = positions[2]['rack3']
+		arm_coordinates=positions[3]['arm']
 		package_id = data_dict['package_id'][0]
 
 		orientation_rack_1 = rack1_coordinates[2]
 		orientation_rack_2 = rack2_coordinates[2]
 		orientation_rack_3 = rack3_coordinates[2]
+		orientation_arm = arm_coordinates[2]
 
 		rack_list = ["rack1", "rack2", "rack3"]
 		print("-------------------")
@@ -201,17 +202,49 @@ class NavigationController(Node):
 		print("RACK_2--",orientation_rack_2)
 		print("RACK_3--",orientation_rack_3)
 		print("-------------------")
+
+
 		theta_1=self.normalize_angle(orientation_rack_1)
-		bot_pose_1=self.nav_coordinate(theta_1,rack1_coordinates[0],rack1_coordinates[1])
-		goal_theta_1= self.nav_theta(orientation_rack_1)
+		bot_pose_1=self.nav_coordinate(theta_1,rack1_coordinates[0],rack1_coordinates[1],"final")
+		goal_theta_1= self.nav_theta(orientation_rack_1,"rack")
 
 		theta_2=self.normalize_angle(orientation_rack_2)
-		bot_pose_2=self.nav_coordinate(theta_2,rack2_coordinates[0],rack2_coordinates[1])
-		goal_theta_2= self.nav_theta(orientation_rack_2)
+		bot_pose_2=self.nav_coordinate(theta_2,rack2_coordinates[0],rack2_coordinates[1],"final")
+		goal_theta_2= self.nav_theta(orientation_rack_2,"rack")
 
 		theta_3=self.normalize_angle(orientation_rack_3)
-		bot_pose_3=self.nav_coordinate(theta_3,rack3_coordinates[0],rack3_coordinates[1])
-		goal_theta_3= self.nav_theta(orientation_rack_3)
+		bot_pose_3=self.nav_coordinate(theta_3,rack3_coordinates[0],rack3_coordinates[1],"final")
+		goal_theta_3= self.nav_theta(orientation_rack_3,"rack")
+		
+	
+		
+		#    DROP LOCATION
+
+		theta_4=self.normalize_angle(orientation_arm)
+		arm_pose_1=self.nav_coordinate(orientation_arm+90.0,arm_coordinates[0],arm_coordinates[1],"final")
+		goal_theta_4= self.nav_theta(orientation_arm+90.0,"arm")
+
+		theta_5=self.normalize_angle(orientation_arm)
+		arm_pose_2=self.nav_coordinate(orientation_arm,arm_coordinates[0],arm_coordinates[1],"final")
+		goal_theta_5= self.nav_theta(orientation_arm,"arm")
+
+		theta_6=self.normalize_angle(orientation_arm)
+		arm_pose_3=self.nav_coordinate(orientation_arm-90.0,arm_coordinates[0],arm_coordinates[1],"final")
+		goal_theta_6= self.nav_theta(orientation_arm-90.0,"arm")
+
+
+
+		#   INIT ARM poss DROP LOCATION
+
+		init_arm_pose_1=self.nav_coordinate(orientation_arm+90.0,arm_coordinates[0],arm_coordinates[1],"initial")
+		init_goal_theta_4= self.nav_theta(orientation_arm+90.0,"arm")
+
+		init_arm_pose_2=self.nav_coordinate(orientation_arm,arm_coordinates[0],arm_coordinates[1],"initial")
+		init_goal_theta_5= self.nav_theta(orientation_arm,"arm")
+
+		init_arm_pose_3=self.nav_coordinate(orientation_arm-90.0,arm_coordinates[0],arm_coordinates[1],"initial")
+		init_goal_theta_6= self.nav_theta(orientation_arm-90.0,"arm")
+
 
 		goal_pick_1 = PoseStamped()
 		goal_pick_1.header.frame_id = 'map'
@@ -222,38 +255,7 @@ class NavigationController(Node):
 		goal_pick_1.pose.orientation.y = goal_theta_1[1]
 		goal_pick_1.pose.orientation.z = goal_theta_1[2]
 		goal_pick_1.pose.orientation.w = goal_theta_1[3]
-
-		goal_drop_int_1 = PoseStamped()
-		goal_drop_int_1.header.frame_id = 'map'
-		goal_drop_int_1.header.stamp = self.navigator.get_clock().now().to_msg()
-		goal_drop_int_1.pose.position.x = -0.2
-		goal_drop_int_1.pose.position.y = -2.7
-		goal_drop_int_1.pose.orientation.x = 0.0
-		goal_drop_int_1.pose.orientation.y = 0.0
-		goal_drop_int_1.pose.orientation.z = 0.9999997
-		goal_drop_int_1.pose.orientation.w = 0.0007963
-
-		goal_drop_int_2 = PoseStamped()
-		goal_drop_int_2.header.frame_id = 'map'
-		goal_drop_int_2.header.stamp = self.navigator.get_clock().now().to_msg()
-		goal_drop_int_2.pose.position.x = 1.65
-		goal_drop_int_2.pose.position.y = -4.5
-		goal_drop_int_2.pose.orientation.x = 0.0
-		goal_drop_int_2.pose.orientation.y = 0.0
-		goal_drop_int_2.pose.orientation.z =  -0.70398
-		goal_drop_int_2.pose.orientation.w =  0.7102198
-
-		goal_drop_1 = PoseStamped()
-		goal_drop_1.header.frame_id = 'map'
-		goal_drop_1.header.stamp = self.navigator.get_clock().now().to_msg()
-		goal_drop_1.pose.position.x = 0.99
-		goal_drop_1.pose.position.y = -2.6
-		goal_drop_1.pose.orientation.x = 0.0
-		goal_drop_1.pose.orientation.y = 0.0
-		goal_drop_1.pose.orientation.z = 0.9999997
-		goal_drop_1.pose.orientation.w = 0.0007963
-
-
+	
 		goal_pick_2 = PoseStamped()
 		goal_pick_2.header.frame_id = 'map'
 		goal_pick_2.pose.position.x = bot_pose_2[0]
@@ -263,6 +265,7 @@ class NavigationController(Node):
 		goal_pick_2.pose.orientation.z = goal_theta_2[2]
 		goal_pick_2.pose.orientation.w = goal_theta_2[3]
 
+		
 		goal_pick_3 = PoseStamped()
 		goal_pick_3.header.frame_id = 'map'
 		goal_pick_3.header.stamp = self.navigator.get_clock().now().to_msg()
@@ -274,44 +277,72 @@ class NavigationController(Node):
 		goal_pick_3.pose.orientation.w = goal_theta_3[3]
 
 
+		goal_drop_init_1 = PoseStamped()
+		goal_drop_init_1.header.frame_id = 'map'
+		goal_drop_init_1.header.stamp = self.navigator.get_clock().now().to_msg()
+		goal_drop_init_1.pose.position.x = init_arm_pose_1[0]
+		goal_drop_init_1.pose.position.y = init_arm_pose_1[1]
+		goal_drop_init_1.pose.orientation.x = init_goal_theta_4[0]
+		goal_drop_init_1.pose.orientation.y = init_goal_theta_4[1]
+		goal_drop_init_1.pose.orientation.z = init_goal_theta_4[2]
+		goal_drop_init_1.pose.orientation.w = init_goal_theta_4[3]
+	
+		goal_drop_init_2 = PoseStamped()
+		goal_drop_init_2.header.frame_id = 'map'
+		goal_drop_init_2.pose.position.x = init_arm_pose_2[0]
+		goal_drop_init_2.pose.position.y = init_arm_pose_2[1]
+		goal_drop_init_2.pose.orientation.x = init_goal_theta_5[0]
+		goal_drop_init_2.pose.orientation.y = init_goal_theta_5[1]
+		goal_drop_init_2.pose.orientation.z = init_goal_theta_5[2]
+		goal_drop_init_2.pose.orientation.w = init_goal_theta_5[3]
 
+		goal_drop_init_3 = PoseStamped()
+		goal_drop_init_3.header.frame_id = 'map'
+		goal_drop_init_3.pose.position.x = init_arm_pose_3[0]
+		goal_drop_init_3.pose.position.y = init_arm_pose_3[1]
+		goal_drop_init_3.pose.orientation.x = init_goal_theta_6[0]
+		goal_drop_init_3.pose.orientation.y = init_goal_theta_6[1]
+		goal_drop_init_3.pose.orientation.z = init_goal_theta_6[2]
+		goal_drop_init_3.pose.orientation.w = init_goal_theta_6[3]
+
+		goal_drop_1 = PoseStamped()
+		goal_drop_1.header.frame_id = 'map'
+		goal_drop_1.header.stamp = self.navigator.get_clock().now().to_msg()
+		goal_drop_1.pose.position.x = arm_pose_1[0]
+		goal_drop_1.pose.position.y = arm_pose_1[1]
+		goal_drop_1.pose.orientation.x = goal_theta_4[0]
+		goal_drop_1.pose.orientation.y = goal_theta_4[1]
+		goal_drop_1.pose.orientation.z = goal_theta_4[2]
+		goal_drop_1.pose.orientation.w = goal_theta_4[3]
+	
 		goal_drop_2 = PoseStamped()
 		goal_drop_2.header.frame_id = 'map'
-		goal_drop_2.header.stamp = self.navigator.get_clock().now().to_msg()
-		goal_drop_2.pose.position.x = 1.65
-		goal_drop_2.pose.position.y = -3.1
-		goal_drop_2.pose.orientation.x = 0.0
-		goal_drop_2.pose.orientation.y = 0.0
-		goal_drop_2.pose.orientation.z =  -0.70398
-		goal_drop_2.pose.orientation.w =  0.7102198
+		goal_drop_2.pose.position.x = arm_pose_2[0]
+		goal_drop_2.pose.position.y = arm_pose_2[1]
+		goal_drop_2.pose.orientation.x = goal_theta_5[0]
+		goal_drop_2.pose.orientation.y = goal_theta_5[1]
+		goal_drop_2.pose.orientation.z = goal_theta_5[2]
+		goal_drop_2.pose.orientation.w = goal_theta_5[3]
 
 		goal_drop_3 = PoseStamped()
 		goal_drop_3.header.frame_id = 'map'
-		goal_drop_3.header.stamp = self.navigator.get_clock().now().to_msg()
-		goal_drop_3.pose.position.x =1.550000
-		goal_drop_3.pose.position.y = -1.298586
-		goal_drop_3.pose.orientation.x = 0.0
-		goal_drop_3.pose.orientation.y = 0.0
-		goal_drop_3.pose.orientation.z =  0.6921004
-		goal_drop_3.pose.orientation.w = 0.7218012 
+		goal_drop_3.pose.position.x = arm_pose_3[0]
+		goal_drop_3.pose.position.y = arm_pose_3[1]
+		goal_drop_3.pose.orientation.x = goal_theta_6[0]
+		goal_drop_3.pose.orientation.y = goal_theta_6[1]
+		goal_drop_3.pose.orientation.z = goal_theta_6[2]
+		goal_drop_3.pose.orientation.w = goal_theta_6[3]
 
 
 		# Define other drop goals...
 
 		self.navigator.waitUntilNav2Active()
-		self.arm_request(rack_no = "3")
-		#self.navigate_and_dock(goal_pick_3, goal_drop_3, goal_drop_int, orientation_rack_3, rack_list[2], "3")
-		self.navigate_and_dock(goal_pick_1, goal_drop_2, goal_drop_int_2, orientation_rack_1, rack_list[0], "1")
-		self.move_with_linear_x(2.0,0.5,-0.95)
-		self.navigate_and_dock(goal_pick_2, goal_drop_1, goal_drop_int_1, orientation_rack_2, rack_list[1], "2")
-		self.move_with_linear_x(2.0,0.5,-0.95)
 
-		#elif package_id == 2:
-			# Navigate for package_id 2
-		#	pass
-		#else:
-			# Navigate for package_id 1
-		#	pass
+		self.arm_request(rack_no = "3")
+		self.navigate_and_dock(goal_pick_2, goal_drop_2, goal_drop_init_2, orientation_rack_2, rack_list[1], "2")
+		self.move_with_linear_x(2.0,0.5,-0.95)
+		self.navigate_and_dock(goal_pick_1, goal_drop_1, goal_drop_init_1, orientation_rack_1, rack_list[0], "1")
+		self.move_with_linear_x(2.0,0.5,-0.95)
 
 		exit(0)
 

@@ -156,17 +156,7 @@ def detect_aruco(image, depth):
 			cv2.imshow("Aruco Detection", image)
 			cv2.waitKey(1)  # Wait for 1ms
 		
-			############ ADD YOUR CODE HERE ############
-
-			# INSTRUCTIONS & HELP : 
-
-			#	->  Convert input BGR image to GRAYSCALE for aruco detection
-
-
-			#   ->  Draw frame axes from coordinates received using pose estimation
-			#       ->  HINT: You may use 'cv2.drawFrameAxes'
-
-			############################################	
+	
 			# cv2.destroyAllWindows()
 			return center_aruco_list, distance_from_rgb_list, angle_aruco_list, width_aruco_list, ids, tvec
 		except Exception as e:
@@ -220,15 +210,6 @@ class aruco_tf(Node):
 		br = CvBridge()
 
 		self.depth_image = br.imgmsg_to_cv2(data, data.encoding)
-		############ ADD YOUR CODE HERE ############
-
-		# INSTRUCTIONS & HELP : 
-
-		#	->  Use data variable to convert ROS Image message to CV2 Image type
-
-		#   ->  HINT: You may use CvBridge to do the same
-
-		############################################
 
 
 	def colorimagecb(self, data):
@@ -246,18 +227,6 @@ class aruco_tf(Node):
 
 		self.cv_image = br.imgmsg_to_cv2(data, "bgr8")
 		self.gray = cv2.cvtColor(self.cv_image, cv2.COLOR_BGR2GRAY)
-		############ ADD YOUR CODE HERE ############
-
-		# INSTRUCTIONS & HELP : 
-
-		#	->  Use data variable to convert ROS Image message to CV2 Image type
-
-		#   ->  HINT:   You may use CvBridge to do the same
-		#               Check if you need any rotation or flipping image as input data maybe different than what you expect to be.
-		#               You may use cv2 functions such as 'flip' and 'rotate' to do the same
-
-		############################################
-
 
 	def process_image(self):
 		'''
@@ -376,59 +345,6 @@ class aruco_tf(Node):
 		except Exception as e:
 			pass
 
-
-		############ ADD YOUR CODE HERE ############
-
-		# INSTRUCTIONS & HELP : 
-
-		#	->  Get aruco center, distance from rgb, angle, width and ids list from 'detect_aruco_center' defined above
-
-		#   ->  Loop over detected box ids received to calculate position and orientation transform to publish TF 
-
-		#   ->  Use this equation to correct the input aruco angle received from cv2 aruco function 'estimatePoseSingleMarkers' here
-		#       It's a correction formula- 
-		#       angle_aruco = (0.788*angle_aruco) - ((angle_aruco**2)/3160)
-
-		#   ->  Then calculate quaternions from roll pitch yaw (where, roll and pitch are 0 while yaw is corrected aruco_angle)
-
-		#   ->  Use center_aruco_list to get realsense depth and log them down. (divide by 1000 to convert mm to m)
-
-		#   ->  Use this formula to rectify x, y, z based on focal length, center value and size of image
-		#       x = distance_from_rgb * (sizeCamX - cX - centerCamX) / focalX
-		#       y = distance_from_rgb * (sizeCamY - cY - centerCamY) / focalY
-		#       z = distance_from_rgb
-		#       where, 
-		#               cX, and cY from 'center_aruco_list'
-		#               distance_from_rgb is depth of object calculated in previous step
-		#               sizeCamX, sizeCamY, centerCamX, centerCamY, focalX and focalY are defined above
-
-		#   ->  Now, mark the center points on image frame using cX and cY variables with help of 'cv2.cirle' function 
-
-		#   ->  Here, till now you receive coordinates from camera_link to aruco marker center position. 
-		#       So, publish this transform w.r.t. camera_link using Geometry Message - TransformStamped 
-		#       so that we will collect it's position w.r.t base_link in next step.
-		#       Use the following frame_id-
-		#           frame_id = 'camera_link'
-		#           child_frame_id = 'cam_<marker_id>'          Ex: cam_20, where 20 is aruco marker ID
-
-		#   ->  Then finally lookup transform between base_link and obj frame to publish the TF
-		#       You may use 'lookup_transform' function to pose of obj frame w.r.t base_link 
-
-		#   ->  And now publish TF between object frame and base_link
-		#       Use the following frame_id-
-		#           frame_id = 'base_link'
-		#           child_frame_id = 'obj_<marker_id>'          Ex: obj_20, where 20 is aruco marker ID
-
-		#   ->  At last show cv2 image window having detected markers drawn and center points located using 'cv2.imshow' function.
-		#       Refer MD book on portal for sample image -> https://portal.e-yantra.org/
-
-		#   ->  NOTE:   The Z axis of TF should be pointing inside the box (Purpose of this will be known in task 1B)
-		#               Also, auto eval script will be judging angular difference aswell. So, make sure that Z axis is inside the box (Refer sample images on Portal - MD book)
-
-		############################################
-
-
-##################### FUNCTION DEFINITION #######################
 
 def main():
 	'''
