@@ -174,7 +174,7 @@ class NavigationController(Node):
 		self.arm_request(rack_no = "3")
 	def main(self):
 		package_name = 'ebot_nav2'
-		config = "config/config.yaml"
+		config = "config/config_sim.yaml"
 
 		ebot_nav2_dir = get_package_share_directory('ebot_nav2')
 

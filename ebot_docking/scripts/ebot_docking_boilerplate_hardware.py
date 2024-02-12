@@ -113,8 +113,8 @@ class MyRobotDockingController(Node):
 		self.robot_pose[2] = yaw
 
 	def ultra_callback(self,msg):
-		self.usrleft_value= msg.data[4]
-		self.usrright_value = msg.data[5]
+		self.usrleft_value= msg.data[4]/100
+		self.usrright_value = msg.data[5]/100
 
 
 	# Utility function to normalize angles within the range of -π to π (OPTIONAL)
@@ -139,10 +139,8 @@ class MyRobotDockingController(Node):
 			# Implement control logic here for linear and angular motion
 			# For example P-controller is enough, what is P-controller go check it out !
 			# ...
-			print("After")
+			#
 			self.difference = self.normalize_yaw_rack - self.normalize_yaw_bot
-			self.flag = 1
-			self.orientation_dock = False
 
 			if self.orientation_dock ==True:
 				print("YAW------------YAW",(self.rack_yaw[int(self.rack_no)-1]))
@@ -154,13 +152,12 @@ class MyRobotDockingController(Node):
 				robot_head=str(self.robot_pose[2]/abs(self.robot_pose[2]))
 				print("ERRORS------",error,error2)
 
-
+# [0.9, 2.04, 0.0]
 
 
 
 ##  X DIRECTION POSS CORRECTION
 				
-<<<<<<< Updated upstream
 				if 0.3 > abs(self.x_pose[int(self.rack_no) - 1][0] - self.robot_pose[0]) > 0.025  and robot_head== "1.0":
 
 					print(self.robot_pose[0],self.robot_pose[1],"---------44444444",abs(self.x_pose[int(self.rack_no) - 1][0] - self.robot_pose[0]))
@@ -172,11 +169,6 @@ class MyRobotDockingController(Node):
 				elif 0.3 > abs(self.x_pose[int(self.rack_no) - 1][0] - self.robot_pose[0]) > 0.025 and robot_head== "-1.0":
 					print(self.robot_pose[0],self.robot_pose[1],"---------44444444",abs(self.x_pose[int(self.rack_no) - 1][0] - self.robot_pose[0]))
 					vel.linear.x = error *0.4
-=======
-				if abs(self.rack3_coordinates[0] - self.robot_pose[0]) > 0.01:
-					print(self.robot_pose[0],"---------44444444")
-					vel.linear.x = error
->>>>>>> Stashed changes
 					self.vel_pub.publish(vel)
 
 
@@ -274,11 +266,11 @@ class MyRobotDockingController(Node):
 
 #   NO ULTRA SONIC DISTANCE ERROR DIRECT DOCKING
 					
-				if  self.usrleft_value > 1:
+				if  self.usrleft_value >= 0.13:
 					print("===============")
 					print(self.usrleft_value)
 					self.orientation_dock = False
-					vel.linear.x = -self.usrleft_value * 0.2
+					vel.linear.x = -self.usrleft_value * 0.48
 					vel.angular.z = 0.0
 					self.vel_pub.publish(vel)
 					self.linear_dock = False
@@ -290,6 +282,7 @@ class MyRobotDockingController(Node):
 				else:
 					vel.linear.x = 0.0
 					self.vel_pub.publish(vel)
+					time.sleep(2)
 					print("docking done")
 					self.linear_dock = True
 					self.is_docking = False

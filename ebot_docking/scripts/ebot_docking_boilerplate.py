@@ -53,7 +53,7 @@ class MyRobotDockingController(Node):
 		self.normalize_yaw_rack = 0
 		self.difference = 0
 		package_name = 'ebot_nav2'
-		config = "config/config.yaml"
+		config = "config/config_sim.yaml"
 		self.flag =0
 
 		pkg_share = FindPackageShare(package=package_name).find(package_name)
@@ -267,10 +267,7 @@ class MyRobotDockingController(Node):
 
 	# Callback function for the DockControl service
 	def dock_control_callback(self, request, response):
-		# Extract desired docking parameters from the service request
-		self.linear_dock = request.linear_dock
-		self.orientation_dock = request.orientation_dock
-		self.distance = request.distance
+		# Extract desired docking parametg
 		self.orientation = request.orientation
 		self.rack_no = request.rack_no
 		# print(self.orientation)
