@@ -339,9 +339,9 @@ class NavigationController(Node):
 		self.navigator.waitUntilNav2Active()
 
 		self.arm_request(rack_no = "3")
-		self.navigate_and_dock(goal_pick_2, goal_drop_2, goal_drop_init_2, orientation_rack_2, rack_list[1], "2")
-		self.move_with_linear_x(2.0,0.5,-0.95)
 		self.navigate_and_dock(goal_pick_1, goal_drop_1, goal_drop_init_1, orientation_rack_1, rack_list[0], "1")
+		self.move_with_linear_x(2.0,0.5,-0.95)
+		self.navigate_and_dock(goal_pick_2, goal_drop_2, goal_drop_init_2, orientation_rack_2, rack_list[1], "2")
 		self.move_with_linear_x(2.0,0.5,-0.95)
 
 		exit(0)

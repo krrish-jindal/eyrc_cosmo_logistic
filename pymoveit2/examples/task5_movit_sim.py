@@ -249,28 +249,28 @@ class endf(Node):
 
 #   ARM Adding Buffer POSS  &  Drop Location
 
-                    if self.variable_b == "1" and (round(tool0.transform.translation.y,2) > 0.25):
+                    if self.variable_b == "2" and (round(tool0.transform.translation.y,2) > 0.25):
                         __twist_msg = TwistStamped()
                         __twist_msg.header.stamp = self.get_clock().now().to_msg()
                         __twist_msg.header.frame_id = ur5.base_link_name()
                         __twist_msg.twist.linear.z = -0.08
                         __twist_msg.twist.linear.x = -0.4
                         self.twist_pub.publish(__twist_msg)
-                    elif self.variable_b == "1" and (round(tool0.transform.translation.y,2) <= 0.25):
+                    elif self.variable_b == "2" and (round(tool0.transform.translation.y,2) <= 0.25):
                         self.moveit2.move_to_configuration(joint_positions_final_1)
                         self.moveit2.wait_until_executed()
                         self.moveit2.move_to_configuration(joint_positions_final_1)
                         self.moveit2.wait_until_executed()
                         break
 
-                    elif self.variable_b == "2" and (round(tool0.transform.translation.x,2) > 0.23):
+                    elif self.variable_b == "1" and (round(tool0.transform.translation.x,2) > 0.23):
                         __twist_msg = TwistStamped()
                         __twist_msg.header.stamp = self.get_clock().now().to_msg()
                         __twist_msg.header.frame_id = ur5.base_link_name()
                         __twist_msg.twist.linear.z = 0.04
                         __twist_msg.twist.linear.y = -0.2
                         self.twist_pub.publish(__twist_msg)
-                    elif self.variable_b == "2" and (round(tool0.transform.translation.x,2) <= 0.23):
+                    elif self.variable_b == "1" and (round(tool0.transform.translation.x,2) <= 0.23):
                         self.moveit2.move_to_configuration(joint_positions_initial)
                         self.moveit2.wait_until_executed()
                         self.moveit2.move_to_configuration(joint_positions_initial)
