@@ -109,7 +109,7 @@ class MyRobotDockingController(Node):
 		if angle < 0:
 			angle = math.pi + (math.pi + angle)
 		return angle
-
+	
 
 	# Main control loop for managing docking behavior
 

@@ -147,8 +147,14 @@ class NavigationController(Node):
 			print('Goal failed!')
 		else:
 			print('Goal has an invalid return status!')
+	def set_parameter(self):
 
+		parameter_name = '/local_costmap/local_costmap footprint'
+		parameter_value = '[ [0.4, 0.3], [0.4, -0.3], [-0.4, -0.3], [-0.4,-0.5], [-0.65,-0.5], [-0.65,0.5], [-0.4,0.5], [-0.4, 0.3] ]'
 
+		self.set_parameters([
+			rclpy.parameter.Parameter(parameter_name, rclpy.Parameter.Type.STRING, parameter_value)
+		])
 
 	def navigate_and_dock(self, goal_pick, goal_drop, goal_int, orientation_rack, rack,rack_no):
 		self.rack_attach(rack)

@@ -18,13 +18,15 @@ import math
 from geometry_msgs.msg import Quaternion
 from tf_transformations import euler_from_quaternion
 from tf_transformations import quaternion_from_euler
+from geometry_msgs.msg import Polygon,Point32
+from rclpy.parameter import Parameter
 
 class NavigationController(Node):
 
 	def __init__(self):
 		rclpy.init()  # Initialize rclpy here
-		super().__init__('nav_dock')
-
+		super().__init__('nav_dock',allow_undeclared_parameters=True,automatically_declare_parameters_from_overrides=True)
+		
 
 		self.attach = self.create_client(srv_type=AttachLink, srv_name='/ATTACH_LINK')
 		self.detach = self.create_client(srv_type=DetachLink, srv_name='/DETACH_LINK')
@@ -32,6 +34,8 @@ class NavigationController(Node):
 		self.client_docking = self.create_client(srv_type=DockSw, srv_name='dock_control')
 		self.vel_pub = self.create_publisher(Twist, "/cmd_vel", 10)
 		self.vel_msg = Twist()
+		self.polygon_pub = self.create_publisher(Polygon, "/local_costmap/published_footprint", 10)
+
 		self.navigator = BasicNavigator()
 		self.flag=False
 		self.robot_pose = [0, 0]
@@ -154,10 +158,52 @@ class NavigationController(Node):
 		else:
 			print('Goal has an invalid return status!')
 
+
+
+
+	def set_parameter(self):
+
+		parameter_name = '/local_costmap/local_costmap'
+		parameter_name_1 = 'footprint'
+
+		parameter_value = '[ [0.4, 0.3], [0.4, -0.3], [-0.4, -0.3], [-0.4,-0.5], [-0.65,-0.5], [-0.65,0.5], [-0.4,0.5], [-0.4, 0.3] ]'
+
+		# a= Parameter(parameter_name, rclpy.Parameter.Type.STRING, parameter_value)
+		# b= Parameter(parameter_name_1, rclpy.Parameter.Type.STRING, parameter_value)
+		# self.get_parameter_or([
+		# 	Parameter(parameter_name, rclpy.Parameter.Type.STRING, parameter_value)
+
+		# ])
+
+		# self.get_parameter_or(
+		# 		parameter_name, Parameter(parameter_name_1, Parameter.Type.STRING, parameter_value))
+		# # self.declare_parameter(parameter_name, rclpy.Parameter.Type.STRING)
+		# self.set_parameters([Parameter(parameter_name_1, Parameter.Type.STRING, parameter_value)])
+
+		self.declare_parameter('nav2_params_file', '/home/kakashi/eyantra_ws/src/eyrc_cosmo_logistic/ebot_nav2/params/nav2_params.yaml')
+		nav2_params_file = self.get_parameter('nav2_params_file').value
+		# Load Nav2 parameters from the specified YAML file
+		self.set_parameters(nav2_params_file)
+	
+	# def set_parameter(self):
+	# 	polygon_msg = Polygon()
+	# 	points = [[0.4, 0.3], [0.4, -0.3], [-0.4, -0.3], [-0.4, -0.5],
+	# 		[-0.65, -0.5], [-0.65, 0.5], [-0.4, 0.5], [-0.4, 0.3]]
+		
+	# 	for point in points:
+	# 		p = Point32()
+	# 		p.x = point[0]
+	# 		p.y = point[1]
+	# 		polygon_msg.points.append(p)
+	# 	print(polygon_msg)
+	# 	self.polygon_pub.publish(polygon_msg)
+
+
+
 	def navigate_and_dock(self, goal_pick, goal_drop, goal_int, orientation_rack, rack, rack_no):
 		self.navigator.goToPose(goal_pick)
 		self.nav_reach(goal_pick)
-		
+		self.set_parameter()
 		self.send_request(orientation_rack, rack_no)
 		self.rack_attach(rack)
 		self.navigator.goToPose(goal_int)
@@ -337,12 +383,14 @@ class NavigationController(Node):
 		# Define other drop goals...
 
 		self.navigator.waitUntilNav2Active()
+		
+		self.set_parameter()
 
-		self.arm_request(rack_no = "3")
-		self.navigate_and_dock(goal_pick_1, goal_drop_1, goal_drop_init_1, orientation_rack_1, rack_list[0], "1")
-		self.move_with_linear_x(2.0,0.5,-0.95)
-		self.navigate_and_dock(goal_pick_2, goal_drop_2, goal_drop_init_2, orientation_rack_2, rack_list[1], "2")
-		self.move_with_linear_x(2.0,0.5,-0.95)
+		# self.arm_request(rack_no = "3")
+		# self.navigate_and_dock(goal_pick_1, goal_drop_1, goal_drop_init_1, orientation_rack_1, rack_list[0], "1")
+		# self.move_with_linear_x(2.0,0.5,-0.95)
+		# self.navigate_and_dock(goal_pick_2, goal_drop_2, goal_drop_init_2, orientation_rack_2, rack_list[1], "2")
+		# self.move_with_linear_x(2.0,0.5,-0.95)
 
 		exit(0)
 
