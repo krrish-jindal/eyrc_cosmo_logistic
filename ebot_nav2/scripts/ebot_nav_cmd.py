@@ -175,15 +175,19 @@ class NavigationController(Node):
 
 		# ])
 
-		# self.get_parameter_or(
-		# 		parameter_name, Parameter(parameter_name_1, Parameter.Type.STRING, parameter_value))
+		ok = self.get_parameter_or(
+				parameter_name, Parameter(parameter_name_1, Parameter.Type.STRING, parameter_value))
 		# # self.declare_parameter(parameter_name, rclpy.Parameter.Type.STRING)
-		# self.set_parameters([Parameter(parameter_name_1, Parameter.Type.STRING, parameter_value)])
+		hmm = self.set_parameters([Parameter(parameter_name_1, Parameter.Type.STRING, parameter_value)])
+		print(ok.value)
+		print(hmm)
+		os.system("ros2 param set /global_costmap/global_costmap footprint '[ [0.4, 0.3], [0.4, -0.3], [-0.4, -0.3], [-0.4,-0.5], [-0.65,-0.5], [-0.65,0.5], [-0.4,0.5], [-0.4, 0.3] ]'")
 
-		self.declare_parameter('nav2_params_file', '/home/kakashi/eyantra_ws/src/eyrc_cosmo_logistic/ebot_nav2/params/nav2_params.yaml')
-		nav2_params_file = self.get_parameter('nav2_params_file').value
+
+		# self.declare_parameter('nav2_params_file', '/home/kakashi/eyantra_ws/src/eyrc_cosmo_logistic/ebot_nav2/params/nav2_params.yaml')
+		# nav2_params_file = self.get_parameter('nav2_params_file').value
 		# Load Nav2 parameters from the specified YAML file
-		self.set_parameters(nav2_params_file)
+		# self.set_parameters(nav2_params_file)
 	
 	# def set_parameter(self):
 	# 	polygon_msg = Polygon()
@@ -354,8 +358,8 @@ class NavigationController(Node):
 		goal_drop_1 = PoseStamped()
 		goal_drop_1.header.frame_id = 'map'
 		goal_drop_1.header.stamp = self.navigator.get_clock().now().to_msg()
-		goal_drop_1.pose.position.x = arm_pose_1[0]
-		goal_drop_1.pose.position.y = arm_pose_1[1]
+		goal_drop_1.pose.position.x = 5.12
+		goal_drop_1.pose.position.y = -0.0418
 		goal_drop_1.pose.orientation.x = goal_theta_4[0]
 		goal_drop_1.pose.orientation.y = goal_theta_4[1]
 		goal_drop_1.pose.orientation.z = goal_theta_4[2]
@@ -363,8 +367,8 @@ class NavigationController(Node):
 	
 		goal_drop_2 = PoseStamped()
 		goal_drop_2.header.frame_id = 'map'
-		goal_drop_2.pose.position.x = arm_pose_2[0]
-		goal_drop_2.pose.position.y = arm_pose_2[1]
+		goal_drop_2.pose.position.x = 6.33
+		goal_drop_2.pose.position.y = -1.01
 		goal_drop_2.pose.orientation.x = goal_theta_5[0]
 		goal_drop_2.pose.orientation.y = goal_theta_5[1]
 		goal_drop_2.pose.orientation.z = goal_theta_5[2]
@@ -384,10 +388,12 @@ class NavigationController(Node):
 
 		self.navigator.waitUntilNav2Active()
 		
-		self.set_parameter()
+		# self.set_parameter()
 
 		# self.arm_request(rack_no = "3")
 		# self.navigate_and_dock(goal_pick_1, goal_drop_1, goal_drop_init_1, orientation_rack_1, rack_list[0], "1")
+		self.navigator.goToPose(goal_drop_2)
+		self.nav_reach(goal_drop_2)
 		# self.move_with_linear_x(2.0,0.5,-0.95)
 		# self.navigate_and_dock(goal_pick_2, goal_drop_2, goal_drop_init_2, orientation_rack_2, rack_list[1], "2")
 		# self.move_with_linear_x(2.0,0.5,-0.95)
