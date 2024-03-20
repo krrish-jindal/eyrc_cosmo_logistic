@@ -72,11 +72,6 @@ class NavigationController(Node):
 
 		atc = self.attach.call_async(req)
 		rclpy.spin_until_future_complete(self, atc)
-		self.vel_msg.linear.x = 0.2
-		self.vel_pub.publish(self.vel_msg)
-		time.sleep(2)
-		self.vel_msg.linear.x = 0.0
-		self.vel_pub.publish(self.vel_msg)
 		return atc.result()
 
 	def normalize_angle(self, angle):
@@ -87,7 +82,7 @@ class NavigationController(Node):
 	def nav_coordinate(self,angle,x,y,poss):
 		
 		if poss=="final":
-			d=0.65
+			d=0.85
 		else:
 			d=1.0
 			
@@ -147,21 +142,19 @@ class NavigationController(Node):
 			print('Goal failed!')
 		else:
 			print('Goal has an invalid return status!')
-	def set_parameter(self):
 
-		parameter_name = '/local_costmap/local_costmap footprint'
-		parameter_value = '[ [0.4, 0.3], [0.4, -0.3], [-0.4, -0.3], [-0.4,-0.5], [-0.65,-0.5], [-0.65,0.5], [-0.4,0.5], [-0.4, 0.3] ]'
 
-		self.set_parameters([
-			rclpy.parameter.Parameter(parameter_name, rclpy.Parameter.Type.STRING, parameter_value)
-		])
 
 	def navigate_and_dock(self, goal_pick, goal_drop, goal_int, orientation_rack, rack,rack_no):
 		self.rack_attach(rack)
 		self.navigator.goToPose(goal_pick)
 		self.nav_reach(goal_pick)
-
 		self.send_request(orientation_rack, rack_no)
+		# os.system("ros2 param set /global_costmap/global_costmap footprint '[ [0.4, 0.3], [0.4, -0.3], [-0.4, -0.3], [-0.4,-0.5], [-0.65,-0.5], [-0.65,0.5], [-0.4,0.5], [-0.4, 0.3] ]'")
+		# os.system("ros2 param set /local_costmap/local_costmap footprint '[ [0.4, 0.3], [0.4, -0.3], [-0.4, -0.3], [-0.4,-0.5], [-0.65,-0.5], [-0.65,0.5], [-0.4,0.5], [-0.4, 0.3] ]'")
+		# self.move_with_linear_x(1.0,-0.2,0.0)
+		# self.move_with_linear_x(2.0,0.2,0.0)
+
 		#self.rack_attach(rack)
 
 		self.navigator.goToPose(goal_int)
@@ -169,8 +162,11 @@ class NavigationController(Node):
 		self.navigator.goToPose(goal_drop)
 		self.nav_reach(goal_drop)
 		self.rack_detach(rack)
+		self.move_with_linear_x(0.85,0.2,0.3)
+		# os.system("ros2 param set /global_costmap/global_costmap footprint '[ [0.4, 0.3], [0.4, -0.3], [-0.4, -0.3], [-0.4, 0.3] ]'")
+		# os.system("ros2 param set /local_costmap/local_costmap footprint '[ [0.4, 0.3], [0.4, -0.3], [-0.4, -0.3], [-0.4, 0.3] ]'")
 		self.arm_request(rack_no = str(rack_no))
-    
+	
 
 
 	def main(self):
@@ -276,8 +272,8 @@ class NavigationController(Node):
 	
 		goal_drop_init_2 = PoseStamped()
 		goal_drop_init_2.header.frame_id = 'map'
-		goal_drop_init_2.pose.position.x = init_arm_pose_2[0]
-		goal_drop_init_2.pose.position.y = init_arm_pose_2[1]
+		goal_drop_init_2.pose.position.x = 5.27
+		goal_drop_init_2.pose.position.y = -0.42
 		goal_drop_init_2.pose.orientation.x = init_goal_theta_5[0]
 		goal_drop_init_2.pose.orientation.y = init_goal_theta_5[1]
 		goal_drop_init_2.pose.orientation.z = init_goal_theta_5[2]
@@ -295,8 +291,8 @@ class NavigationController(Node):
 		goal_drop_1 = PoseStamped()
 		goal_drop_1.header.frame_id = 'map'
 		goal_drop_1.header.stamp = self.navigator.get_clock().now().to_msg()
-		goal_drop_1.pose.position.x = arm_pose_1[0]
-		goal_drop_1.pose.position.y = arm_pose_1[1]
+		goal_drop_1.pose.position.x = 6.33
+		goal_drop_1.pose.position.y = -1.01
 		goal_drop_1.pose.orientation.x = goal_theta_4[0]
 		goal_drop_1.pose.orientation.y = goal_theta_4[1]
 		goal_drop_1.pose.orientation.z = goal_theta_4[2]
@@ -304,8 +300,8 @@ class NavigationController(Node):
 	
 		goal_drop_2 = PoseStamped()
 		goal_drop_2.header.frame_id = 'map'
-		goal_drop_2.pose.position.x = arm_pose_2[0]
-		goal_drop_2.pose.position.y = arm_pose_2[1]
+		goal_drop_2.pose.position.x =  5.61
+		goal_drop_2.pose.position.y = -0.39
 		goal_drop_2.pose.orientation.x = goal_theta_5[0]
 		goal_drop_2.pose.orientation.y = goal_theta_5[1]
 		goal_drop_2.pose.orientation.z = goal_theta_5[2]
@@ -321,12 +317,14 @@ class NavigationController(Node):
 		goal_drop_3.pose.orientation.w = goal_theta_6[3]
 
 		self.navigator.waitUntilNav2Active()
-
 		self.arm_request(rack_no = "1")
-		self.navigate_and_dock(goal_pick_3, goal_drop_3, goal_drop_init_3, orientation_rack_3, rack_list[2], "3")
-		self.move_with_linear_x(2.0,0.5,-0.95)
+		self.navigate_and_dock(goal_pick_3, goal_drop_2, goal_drop_init_2, orientation_rack_3, rack_list[2], "3")
+		
+		self.arm_request(rack_no = "3")
+		self.navigate_and_dock(goal_pick_2, goal_drop_1, goal_drop_init_1, orientation_rack_2, rack_list[1], "2")
 
-		self.navigate_and_dock(goal_pick_2, goal_drop_2, goal_drop_init_2, orientation_rack_2, rack_list[1], "2")
+		self.arm_request(rack_no = "2")
+			
 		self.move_with_linear_x(2.0,0.5,-0.95)
 		
 		exit(0)
