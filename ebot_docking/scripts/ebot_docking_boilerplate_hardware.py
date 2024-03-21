@@ -311,7 +311,7 @@ class MyRobotDockingController(Node):
 		# Log a message indicating that docking has started
 		self.get_logger().info("Docking started!")
 		# Create a rate object to control the loop frequency
-		self.rate = self.create_rate(2, self.get_clock())
+		self.rate = self.create_rate(5, self.get_clock())
 
 		# Wait until the robot is aligned for docking
 		while not self.dock_aligned:

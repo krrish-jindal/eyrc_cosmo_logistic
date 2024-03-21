@@ -109,7 +109,7 @@ class MyRobotDockingController(Node):
 		if angle < 0:
 			angle = math.pi + (math.pi + angle)
 		return angle
-	
+
 
 	# Main control loop for managing docking behavior
 
@@ -181,7 +181,10 @@ class MyRobotDockingController(Node):
 					
 			elif self.flag == 1:
 				if abs(self.difference) > 0.1:
-					vel.angular.z = self.difference *0.6
+					if self.difference > 0:
+						vel.angular.z = self.difference *0.6 
+					else:
+						vel.angular.z = self.difference *0.6 
 					self.vel_pub.publish(vel)
 
 
@@ -297,7 +300,7 @@ class MyRobotDockingController(Node):
 			self.is_docking = True
 			self.get_logger().info("Waiting for alignment...")
 			self.controller_loop()
-			self.rate.sleep()
+			# self.rate.sleep()
 
 		# Set the service response indicating success
 		response.success = True

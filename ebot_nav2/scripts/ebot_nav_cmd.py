@@ -100,7 +100,7 @@ class NavigationController(Node):
 	def nav_coordinate(self,angle,x,y,poss):
 
 		if poss=="final":
-			d=0.75
+			d=1
 		else:
 			d=0.95
 
@@ -161,51 +161,16 @@ class NavigationController(Node):
 
 
 
-	def set_parameter(self):
 
-		parameter_name = '/local_costmap/local_costmap'
-		parameter_name_1 = 'footprint'
-
-		parameter_value = '[ [0.4, 0.3], [0.4, -0.3], [-0.4, -0.3], [-0.4,-0.5], [-0.65,-0.5], [-0.65,0.5], [-0.4,0.5], [-0.4, 0.3] ]'
-
-		# a= Parameter(parameter_name, rclpy.Parameter.Type.STRING, parameter_value)
-		# b= Parameter(parameter_name_1, rclpy.Parameter.Type.STRING, parameter_value)
-		# self.get_parameter_or([
-		# 	Parameter(parameter_name, rclpy.Parameter.Type.STRING, parameter_value)
-
-		# ])
-
-		# self.get_parameter_or(
-		# 		parameter_name, Parameter(parameter_name_1, Parameter.Type.STRING, parameter_value))
-		# # self.declare_parameter(parameter_name, rclpy.Parameter.Type.STRING)
-		# self.set_parameters([Parameter(parameter_name_1, Parameter.Type.STRING, parameter_value)])
-
-		self.declare_parameter('nav2_params_file', '/home/kakashi/eyantra_ws/src/eyrc_cosmo_logistic/ebot_nav2/params/nav2_params.yaml')
-		nav2_params_file = self.get_parameter('nav2_params_file').value
-		# Load Nav2 parameters from the specified YAML file
-		self.set_parameters(nav2_params_file)
-	
-	# def set_parameter(self):
-	# 	polygon_msg = Polygon()
-	# 	points = [[0.4, 0.3], [0.4, -0.3], [-0.4, -0.3], [-0.4, -0.5],
-	# 		[-0.65, -0.5], [-0.65, 0.5], [-0.4, 0.5], [-0.4, 0.3]]
-		
-	# 	for point in points:
-	# 		p = Point32()
-	# 		p.x = point[0]
-	# 		p.y = point[1]
-	# 		polygon_msg.points.append(p)
-	# 	print(polygon_msg)
-	# 	self.polygon_pub.publish(polygon_msg)
 
 
 
 	def navigate_and_dock(self, goal_pick, goal_drop, goal_int, orientation_rack, rack, rack_no):
 		self.navigator.goToPose(goal_pick)
 		self.nav_reach(goal_pick)
-		self.set_parameter()
 		self.send_request(orientation_rack, rack_no)
 		self.rack_attach(rack)
+		self.move_with_linear_x(2.0,0.5,-0.95)
 		self.navigator.goToPose(goal_int)
 		self.nav_reach(goal_int)
 
@@ -384,13 +349,15 @@ class NavigationController(Node):
 
 		self.navigator.waitUntilNav2Active()
 		
-		self.set_parameter()
+		# self.set_parameter()
 
 		# self.arm_request(rack_no = "3")
-		# self.navigate_and_dock(goal_pick_1, goal_drop_1, goal_drop_init_1, orientation_rack_1, rack_list[0], "1")
-		# self.move_with_linear_x(2.0,0.5,-0.95)
-		# self.navigate_and_dock(goal_pick_2, goal_drop_2, goal_drop_init_2, orientation_rack_2, rack_list[1], "2")
-		# self.move_with_linear_x(2.0,0.5,-0.95)
+		self.navigate_and_dock(goal_pick_1, goal_drop_1, goal_drop_init_1, orientation_rack_1, rack_list[0], "1")
+		self.move_with_linear_x(2.0,1,-0.95)
+		self.navigate_and_dock(goal_pick_2, goal_drop_2, goal_drop_init_2, orientation_rack_2, rack_list[1], "2")
+		self.move_with_linear_x(2.0,1,-0.95)
+		self.navigate_and_dock(goal_pick_3, goal_drop_3, goal_drop_init_3, orientation_rack_3, rack_list[2], "3")
+		self.move_with_linear_x(2.0,1,-0.95)
 
 		exit(0)
 

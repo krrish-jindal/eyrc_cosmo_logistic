@@ -278,8 +278,8 @@ def generate_launch_description():
     ld.add_action(sim_launch)
     ld.add_action(moveit_spawn)
     ld.add_action(bringup_cmd_group)
-    ld.add_action(docking_server)
-    ld.add_action(opencv_node)
+    # ld.add_action(docking_server)
+    # ld.add_action(opencv_node)
     # ld.add_action(static_tf_publisher_cmd)
     # ld.add_action(ebot_nav_cmd)
 
