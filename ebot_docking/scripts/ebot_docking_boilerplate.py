@@ -215,39 +215,39 @@ class MyRobotDockingController(Node):
 
 
 
-#   CORRECTING ULTRA SONIC DISTANCE ERROR
+# #   CORRECTING ULTRA SONIC DISTANCE ERROR
 				
-				if self.usrleft_value > 0.15 and round(self.usrright_value,1) != round(self.usrleft_value,1):
+# 				if self.usrleft_value > 0.15 and round(self.usrright_value,1) != round(self.usrleft_value,1):
 
 
 
-	#  CORRECTING ULRA SONIC ERROR 
+# 	#  CORRECTING ULRA SONIC ERROR 
 					
-					if abs(self.difference)<=0.02:
-						print(">>>>>=====>>>>>>")
-						vel.angular.z = self.usrdiff*0.2 
+# 					if abs(self.difference)<=0.02:
+# 						print(">>>>>=====>>>>>>")
+# 						vel.angular.z = self.usrdiff*0.2 
 
-						self.vel_pub.publish(vel)
+# 						self.vel_pub.publish(vel)
 				
-	# CORRECTING RACK & BOT YAW ERROR
+# 	# CORRECTING RACK & BOT YAW ERROR
 
-					else:
-						print(">>>>>>>>>>>>>>>")
-						vel.angular.z = self.difference*0.2
-						vel.linear.x = -0.2
+# 					else:
+# 						print(">>>>>>>>>>>>>>>")
+# 						vel.angular.z = self.difference*0.2
+# 						vel.linear.x = -0.2
 
-						self.vel_pub.publish(vel)
+# 						self.vel_pub.publish(vel)
 
  
-					# vel.linear.x = -self.usrleft_value * 0.4
-					self.orientation_dock = False
-					self.linear_dock = False
+# 					# vel.linear.x = -self.usrleft_value * 0.4
+# 					self.orientation_dock = False
+# 					self.linear_dock = False
 
 
 
 #   NO ULTRA SONIC DISTANCE ERROR DIRECT DOCKING
 					
-				elif self.usrleft_value > 0.15 and round(self.usrright_value,1) == round(self.usrleft_value,1):
+				if self.usrleft_value > 0.15:
 					print("===============")
 					self.orientation_dock = False
 					vel.linear.x = -self.usrleft_value * 0.4
