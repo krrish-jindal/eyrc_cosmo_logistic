@@ -63,7 +63,7 @@ def generate_launch_description():
     return LaunchDescription([
         DeclareLaunchArgument(
           'world',
-          default_value=[os.path.join(pkg_models_dir, 'worlds', 'new.world'), ''], # Change name of world file if required.
+          default_value=[os.path.join(pkg_models_dir, 'worlds', 'eyantra_warehouse_task4.world'), ''], # Change name of world file if required.
           description='SDF world file'),
         gazebo
         # ExecuteProcess(cmd=['gazebo', '--verbose', '-s', 'libgazebo_ros_factory.so'], output='screen'),
