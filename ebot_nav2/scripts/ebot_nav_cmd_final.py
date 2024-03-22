@@ -160,7 +160,7 @@ class NavigationController(Node):
 		self.move_with_linear_x(1.0,-0.3,0.0)
 		self.move_with_linear_x(2.0,0.3,0.0)
 
-		#self.rack_attach(rack)
+		self.rack_attach(rack)
 
 		# self.navigator.goToPose(goal_int)
 		# self.nav_reach(goal_int)
@@ -213,25 +213,25 @@ class NavigationController(Node):
 
 
 		theta_4=self.normalize_angle(orientation_arm)
-		arm_pose_1=self.nav_coordinate(orientation_arm+90.0,arm_coordinates[0],arm_coordinates[1],"final")
-		goal_theta_4= self.nav_theta(orientation_arm+90.0,"arm")
+		arm_pose_1=self.nav_coordinate(orientation_arm-1.57,arm_coordinates[0],arm_coordinates[1],"final")
+		goal_theta_4= self.nav_theta(orientation_arm-1.57,"arm")
 
 		theta_5=self.normalize_angle(orientation_arm)
 		arm_pose_2=self.nav_coordinate(orientation_arm,arm_coordinates[0],arm_coordinates[1],"final")
 		goal_theta_5= self.nav_theta(orientation_arm,"arm")
 
 		theta_6=self.normalize_angle(orientation_arm)
-		arm_pose_3=self.nav_coordinate(orientation_arm-90.0,arm_coordinates[0],arm_coordinates[1],"final")
-		goal_theta_6= self.nav_theta(orientation_arm-90.0,"arm")
+		arm_pose_3=self.nav_coordinate(orientation_arm+1.57,arm_coordinates[0],arm_coordinates[1],"final")
+		goal_theta_6= self.nav_theta(orientation_arm+1.57,"arm")
 
-		init_arm_pose_1=self.nav_coordinate(orientation_arm+90.0,arm_coordinates[0],arm_coordinates[1],"initial")
-		init_goal_theta_4= self.nav_theta(orientation_arm+90.0,"arm")
+		init_arm_pose_1=self.nav_coordinate(orientation_arm+1.57,arm_coordinates[0],arm_coordinates[1],"initial")
+		init_goal_theta_4= self.nav_theta(orientation_arm+1.57,"arm")
 
 		init_arm_pose_2=self.nav_coordinate(orientation_arm,arm_coordinates[0],arm_coordinates[1],"initial")
 		init_goal_theta_5= self.nav_theta(orientation_arm,"arm")
 
-		init_arm_pose_3=self.nav_coordinate(orientation_arm-90.0,arm_coordinates[0],arm_coordinates[1],"initial")
-		init_goal_theta_6= self.nav_theta(orientation_arm-90.0,"arm")
+		init_arm_pose_3=self.nav_coordinate(orientation_arm-1.57,arm_coordinates[0],arm_coordinates[1],"initial")
+		init_goal_theta_6= self.nav_theta(orientation_arm-1.57,"arm")
 
 		goal_pick_1 = PoseStamped()
 		goal_pick_1.header.frame_id = 'map'

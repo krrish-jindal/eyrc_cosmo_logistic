@@ -271,29 +271,29 @@ class NavigationController(Node):
 		#    DROP LOCATION
 
 		theta_4=self.normalize_angle(orientation_arm)
-		arm_pose_1=self.nav_coordinate(orientation_arm+90.0,arm_coordinates[0],arm_coordinates[1],"final")
-		goal_theta_4= self.nav_theta(orientation_arm+90.0,"arm")
+		arm_pose_1=self.nav_coordinate(orientation_arm-1.57,arm_coordinates[0],arm_coordinates[1],"final")
+		goal_theta_4= self.nav_theta(orientation_arm-1.57,"arm")
 
 		theta_5=self.normalize_angle(orientation_arm)
 		arm_pose_2=self.nav_coordinate(orientation_arm,arm_coordinates[0],arm_coordinates[1],"final")
 		goal_theta_5= self.nav_theta(orientation_arm,"arm")
 
 		theta_6=self.normalize_angle(orientation_arm)
-		arm_pose_3=self.nav_coordinate(orientation_arm-90.0,arm_coordinates[0],arm_coordinates[1],"final")
-		goal_theta_6= self.nav_theta(orientation_arm-90.0,"arm")
+		arm_pose_3=self.nav_coordinate(orientation_arm+1.57,arm_coordinates[0],arm_coordinates[1],"final")
+		goal_theta_6= self.nav_theta(orientation_arm+1.57,"arm")
 
 
 
 		#   INIT ARM poss DROP LOCATION
 
-		init_arm_pose_1=self.nav_coordinate(orientation_arm+90.0,arm_coordinates[0],arm_coordinates[1],"initial")
-		init_goal_theta_4= self.nav_theta(orientation_arm+90.0,"arm")
+		init_arm_pose_1=self.nav_coordinate(orientation_arm-1.57,arm_coordinates[0],arm_coordinates[1],"initial")
+		init_goal_theta_4= self.nav_theta(orientation_arm-1.57,"arm")
 
 		init_arm_pose_2=self.nav_coordinate(orientation_arm,arm_coordinates[0],arm_coordinates[1],"initial")
 		init_goal_theta_5= self.nav_theta(orientation_arm,"arm")
 
-		init_arm_pose_3=self.nav_coordinate(orientation_arm-90.0,arm_coordinates[0],arm_coordinates[1],"initial")
-		init_goal_theta_6= self.nav_theta(orientation_arm-90.0,"arm")
+		init_arm_pose_3=self.nav_coordinate(orientation_arm+1.57,arm_coordinates[0],arm_coordinates[1],"initial")
+		init_goal_theta_6= self.nav_theta(orientation_arm+1.57,"arm")
 
 
 		goal_pick_1 = PoseStamped()
@@ -391,9 +391,9 @@ class NavigationController(Node):
 		# self.set_parameter()
 
 		# self.arm_request(rack_no = "3")
-		# self.navigate_and_dock(goal_pick_1, goal_drop_1, goal_drop_init_1, orientation_rack_1, rack_list[0], "1")
-		self.navigator.goToPose(goal_drop_2)
-		self.nav_reach(goal_drop_2)
+		self.navigate_and_dock(goal_pick_1, goal_drop_1, goal_drop_init_1, orientation_rack_1, rack_list[0], "1")
+		# self.navigator.goToPose(goal_drop_2)
+		# self.nav_reach(goal_drop_2)
 		# self.move_with_linear_x(2.0,0.5,-0.95)
 		# self.navigate_and_dock(goal_pick_2, goal_drop_2, goal_drop_init_2, orientation_rack_2, rack_list[1], "2")
 		# self.move_with_linear_x(2.0,0.5,-0.95)

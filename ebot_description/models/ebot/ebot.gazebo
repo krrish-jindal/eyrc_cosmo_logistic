@@ -65,7 +65,7 @@
       <publish_odom>true</publish_odom>
       <publish_odom_tf>true</publish_odom_tf>
       <publish_wheel_tf>true</publish_wheel_tf>
-      <update_rate>100.0</update_rate>
+      <update_rate>14.0</update_rate>
       <!-- <update_rate>100.0</update_rate> -->
     </plugin>
   </gazebo>
