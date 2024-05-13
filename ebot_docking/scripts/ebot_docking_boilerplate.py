@@ -30,7 +30,7 @@ class MyRobotDockingController(Node):
 
 
 		# Subscribe to odometry data for robot pose information
-		self.odom_sub = self.create_subscription(Odometry, 'odom', self.odometry_callback, 10)
+		self.odom_sub = self.create_subscription(Odometry, '/odometry/filtered', self.odometry_callback, 10)
 
 		# Subscribe to ultrasonic sensor data for distance measurements
 		self.ultrasonic_rl_sub = self.create_subscription(Range, '/ultrasonic_rl/scan', self.ultrasonic_rl_callback, 10)
@@ -109,7 +109,7 @@ class MyRobotDockingController(Node):
 		if angle < 0:
 			angle = math.pi + (math.pi + angle)
 		return angle
-	
+
 
 	# Main control loop for managing docking behavior
 
@@ -181,7 +181,10 @@ class MyRobotDockingController(Node):
 					
 			elif self.flag == 1:
 				if abs(self.difference) > 0.1:
-					vel.angular.z = self.difference *0.6
+					if self.difference > 0:
+						vel.angular.z = self.difference *0.6 
+					else:
+						vel.angular.z = self.difference *0.6 
 					self.vel_pub.publish(vel)
 
 
@@ -212,39 +215,39 @@ class MyRobotDockingController(Node):
 
 
 
-#   CORRECTING ULTRA SONIC DISTANCE ERROR
+# #   CORRECTING ULTRA SONIC DISTANCE ERROR
 				
-				if self.usrleft_value > 0.15 and round(self.usrright_value,1) != round(self.usrleft_value,1):
+# 				if self.usrleft_value > 0.15 and round(self.usrright_value,1) != round(self.usrleft_value,1):
 
 
 
-	#  CORRECTING ULRA SONIC ERROR 
+# 	#  CORRECTING ULRA SONIC ERROR 
 					
-					if abs(self.difference)<=0.02:
-						print(">>>>>=====>>>>>>")
-						vel.angular.z = self.usrdiff*0.2 
+# 					if abs(self.difference)<=0.02:
+# 						print(">>>>>=====>>>>>>")
+# 						vel.angular.z = self.usrdiff*0.2 
 
-						self.vel_pub.publish(vel)
+# 						self.vel_pub.publish(vel)
 				
-	# CORRECTING RACK & BOT YAW ERROR
+# 	# CORRECTING RACK & BOT YAW ERROR
 
-					else:
-						print(">>>>>>>>>>>>>>>")
-						vel.angular.z = self.difference*0.2
-						vel.linear.x = -0.2
+# 					else:
+# 						print(">>>>>>>>>>>>>>>")
+# 						vel.angular.z = self.difference*0.2
+# 						vel.linear.x = -0.2
 
-						self.vel_pub.publish(vel)
+# 						self.vel_pub.publish(vel)
 
  
-					# vel.linear.x = -self.usrleft_value * 0.4
-					self.orientation_dock = False
-					self.linear_dock = False
+# 					# vel.linear.x = -self.usrleft_value * 0.4
+# 					self.orientation_dock = False
+# 					self.linear_dock = False
 
 
 
 #   NO ULTRA SONIC DISTANCE ERROR DIRECT DOCKING
 					
-				elif self.usrleft_value > 0.15 and round(self.usrright_value,1) == round(self.usrleft_value,1):
+				if self.usrleft_value > 0.15:
 					print("===============")
 					self.orientation_dock = False
 					vel.linear.x = -self.usrleft_value * 0.4

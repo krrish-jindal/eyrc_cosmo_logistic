@@ -22,7 +22,6 @@ from geometry_msgs.msg import Polygon,Point32
 from rclpy.parameter import Parameter
 
 class NavigationController(Node):
-
 	def __init__(self):
 		rclpy.init()  # Initialize rclpy here
 		super().__init__('nav_dock',allow_undeclared_parameters=True,automatically_declare_parameters_from_overrides=True)
@@ -34,11 +33,12 @@ class NavigationController(Node):
 		self.client_docking = self.create_client(srv_type=DockSw, srv_name='dock_control')
 		self.vel_pub = self.create_publisher(Twist, "/cmd_vel", 10)
 		self.vel_msg = Twist()
+		self.odom_sub = self.create_subscription(Odometry, '/odometry/filtered', self.odometry_callback, 10)
 		self.polygon_pub = self.create_publisher(Polygon, "/local_costmap/published_footprint", 10)
 
 		self.navigator = BasicNavigator()
 		self.flag=False
-		self.robot_pose = [0, 0]
+		self.robot_pose = [0,0,0] 
 
 
 
@@ -98,48 +98,48 @@ class NavigationController(Node):
 		return angle
 	
 	def nav_coordinate(self,angle,x,y,poss):
-
+		
 		if poss=="final":
-			d=0.75
+			d=0.85
 		else:
-			d=0.95
-
+			d=1.0
+			
 		self.a=x+(d*math.cos(angle))
 		self.b=y+(d*math.sin(angle))
 		return (self.a,self.b)
 	
-	
 	def nav_theta(self,angle,obj_type):
-
+		
 		if obj_type =="rack":
 			correct_angle=angle-1.57
 		else:
 			correct_angle=angle
+
+
 		x,y,z,w=quaternion_from_euler(0,0,correct_angle)
 		return (x,y,z,w)
-		
+	
 	def move_with_linear_x(self,duration, linear_x, angular_z):
 		start_time = time.time()  # Get the current time
 		end_time = start_time + duration
 		end_time2 = end_time + duration
 
 		# Create a Twist message to control the linear.x (forward movement)
-		vel_msg = Twist()
-
-		vel_msg.linear.x = linear_x
+		self.vel_msg.linear.x = linear_x
 
 		while time.time() < end_time:
-			self.vel_pub.publish(vel_msg)  # Publish the Twist message to control the robot's movement
+			self.vel_pub.publish(self.vel_msg)  # Publish the Twist message to control the robot's movement
 
-		vel_msg.linear.x = 0.0
-		vel_msg.angular.z = angular_z
+		self.vel_msg.linear.x = 0.0
+		self.vel_msg.angular.z = angular_z
 
 		while time.time() < end_time2:
-			self.vel_pub.publish(vel_msg) 
+			self.vel_pub.publish(self.vel_msg) 
 
-		vel_msg.linear.x = 0.0
-		vel_msg.angular.z = 0.0
-		self.vel_pub.publish(vel_msg)
+		self.vel_msg.linear.x = 0.0
+		self.vel_msg.angular.z = 0.0
+		self.vel_pub.publish(self.vel_msg)
+
 
 	def nav_reach(self, goal):
 		while not self.navigator.isTaskComplete():
@@ -158,71 +158,67 @@ class NavigationController(Node):
 		else:
 			print('Goal has an invalid return status!')
 
+	def odometry_callback(self, msg):
+	# Extract and update robot pose information from odometry message
+		self.robot_pose[0] = msg.pose.pose.position.x
+		self.robot_pose[1] = msg.pose.pose.position.y
+		quaternion_array = msg.pose.pose.orientation
+		orientation_list = [quaternion_array.x, quaternion_array.y, quaternion_array.z, quaternion_array.w]
+		_, _, yaw = euler_from_quaternion(orientation_list)
 
-
-
-	def set_parameter(self):
-
-		parameter_name = '/local_costmap/local_costmap'
-		parameter_name_1 = 'footprint'
-
-		parameter_value = '[ [0.4, 0.3], [0.4, -0.3], [-0.4, -0.3], [-0.4,-0.5], [-0.65,-0.5], [-0.65,0.5], [-0.4,0.5], [-0.4, 0.3] ]'
-
-		# a= Parameter(parameter_name, rclpy.Parameter.Type.STRING, parameter_value)
-		# b= Parameter(parameter_name_1, rclpy.Parameter.Type.STRING, parameter_value)
-		# self.get_parameter_or([
-		# 	Parameter(parameter_name, rclpy.Parameter.Type.STRING, parameter_value)
-
-		# ])
-
-		ok = self.get_parameter_or(
-				parameter_name, Parameter(parameter_name_1, Parameter.Type.STRING, parameter_value))
-		# # self.declare_parameter(parameter_name, rclpy.Parameter.Type.STRING)
-		hmm = self.set_parameters([Parameter(parameter_name_1, Parameter.Type.STRING, parameter_value)])
-		print(ok.value)
-		print(hmm)
-		os.system("ros2 param set /global_costmap/global_costmap footprint '[ [0.4, 0.3], [0.4, -0.3], [-0.4, -0.3], [-0.4,-0.5], [-0.65,-0.5], [-0.65,0.5], [-0.4,0.5], [-0.4, 0.3] ]'")
-
-
-		# self.declare_parameter('nav2_params_file', '/home/kakashi/eyantra_ws/src/eyrc_cosmo_logistic/ebot_nav2/params/nav2_params.yaml')
-		# nav2_params_file = self.get_parameter('nav2_params_file').value
-		# Load Nav2 parameters from the specified YAML file
-		# self.set_parameters(nav2_params_file)
-	
-	# def set_parameter(self):
-	# 	polygon_msg = Polygon()
-	# 	points = [[0.4, 0.3], [0.4, -0.3], [-0.4, -0.3], [-0.4, -0.5],
-	# 		[-0.65, -0.5], [-0.65, 0.5], [-0.4, 0.5], [-0.4, 0.3]]
+		self.robot_pose[2] = yaw
 		
-	# 	for point in points:
-	# 		p = Point32()
-	# 		p.x = point[0]
-	# 		p.y = point[1]
-	# 		polygon_msg.points.append(p)
-	# 	print(polygon_msg)
-	# 	self.polygon_pub.publish(polygon_msg)
+
+	def yaw_correction(self,yaw):
+			self.difference=10.0
+			if abs(self.difference) > 0.065:
+				# s=OdomController()
+				# print(s.bot_yaw)
+
+				self.difference = yaw-self.robot_pose[2]
+				print(self.difference,"DIFF----")
+				print(self.robot_pose[2],"ROBT YAW---")
+				if self.difference > 0:
+					print("1")
+					self.vel_msg.angular.z = self.difference *0.3 +0.2
+				else:
+					self.vel_msg.angular.z = (self.difference) *0.3 -0.2
+					print("2")
+				self.vel_pub.publish(self.vel_msg)
+				
+	#  ORIENTATION CORRECTED
+			if abs(self.difference) <= 0.065:
+
+				self.vel_msg.angular.z = 0.0
+				self.vel_pub.publish(self.vel_msg)
+				print("successfully oriented")
+
+			self.move_with_linear_x(2.0,-0.2,0.0)
 
 
 
-	def navigate_and_dock(self, goal_pick, goal_drop, goal_int, orientation_rack, rack, rack_no):
-		self.navigator.goToPose(goal_pick)
-		self.nav_reach(goal_pick)
-		self.set_parameter()
-		self.send_request(orientation_rack, rack_no)
-		self.rack_attach(rack)
+	def navigate_and_dock(self, goal_pick, goal_drop, goal_int, orientation_rack, rack, rack_no,yaw):
+	# 	self.navigator.goToPose(goal_pick)
+	# 	self.nav_reach(goal_pick)
+	# 	self.send_request(orientation_rack, rack_no)
+	# 	self.rack_attach(rack)
+	# 	self.move_with_linear_x(2.0,-0.06,0.0)
+	# 	self.move_with_linear_x(4.0,0.1,0.0)
 		self.navigator.goToPose(goal_int)
 		self.nav_reach(goal_int)
-
-
+		
 		self.navigator.goToPose(goal_drop)
 		self.nav_reach(goal_drop)
+
+		# self.yaw_correction(yaw)
+
 		self.rack_detach(rack)
 		self.arm_request(rack_no = str(rack_no))
 
 
 	def main(self):
 		package_name = 'ebot_nav2'
-		config = "config/config_sim.yaml"
+		config = "config/config.yaml"
 
 		ebot_nav2_dir = get_package_share_directory('ebot_nav2')
 
@@ -245,15 +241,7 @@ class NavigationController(Node):
 		orientation_rack_2 = rack2_coordinates[2]
 		orientation_rack_3 = rack3_coordinates[2]
 		orientation_arm = arm_coordinates[2]
-
 		rack_list = ["rack1", "rack2", "rack3"]
-		print("-------------------")
-		print("RACK_1--",orientation_rack_1)
-		print("RACK_2--",orientation_rack_2)
-		print("RACK_3--",orientation_rack_3)
-		print("-------------------")
-
-
 		theta_1=self.normalize_angle(orientation_rack_1)
 		bot_pose_1=self.nav_coordinate(theta_1,rack1_coordinates[0],rack1_coordinates[1],"final")
 		goal_theta_1= self.nav_theta(orientation_rack_1,"rack")
@@ -265,10 +253,7 @@ class NavigationController(Node):
 		theta_3=self.normalize_angle(orientation_rack_3)
 		bot_pose_3=self.nav_coordinate(theta_3,rack3_coordinates[0],rack3_coordinates[1],"final")
 		goal_theta_3= self.nav_theta(orientation_rack_3,"rack")
-		
-	
-		
-		#    DROP LOCATION
+
 
 		theta_4=self.normalize_angle(orientation_arm)
 		arm_pose_1=self.nav_coordinate(orientation_arm-1.57,arm_coordinates[0],arm_coordinates[1],"final")
@@ -282,10 +267,6 @@ class NavigationController(Node):
 		arm_pose_3=self.nav_coordinate(orientation_arm+1.57,arm_coordinates[0],arm_coordinates[1],"final")
 		goal_theta_6= self.nav_theta(orientation_arm+1.57,"arm")
 
-
-
-		#   INIT ARM poss DROP LOCATION
-
 		init_arm_pose_1=self.nav_coordinate(orientation_arm-1.57,arm_coordinates[0],arm_coordinates[1],"initial")
 		init_goal_theta_4= self.nav_theta(orientation_arm-1.57,"arm")
 
@@ -294,7 +275,9 @@ class NavigationController(Node):
 
 		init_arm_pose_3=self.nav_coordinate(orientation_arm+1.57,arm_coordinates[0],arm_coordinates[1],"initial")
 		init_goal_theta_6= self.nav_theta(orientation_arm+1.57,"arm")
-
+		arm_yaw_1= orientation_arm-1.57
+		arm_yaw_2= orientation_arm
+		arm_yaw_3= orientation_arm+1.57
 
 		goal_pick_1 = PoseStamped()
 		goal_pick_1.header.frame_id = 'map'
@@ -327,6 +310,7 @@ class NavigationController(Node):
 		goal_pick_3.pose.orientation.w = goal_theta_3[3]
 
 
+
 		goal_drop_init_1 = PoseStamped()
 		goal_drop_init_1.header.frame_id = 'map'
 		goal_drop_init_1.header.stamp = self.navigator.get_clock().now().to_msg()
@@ -339,8 +323,8 @@ class NavigationController(Node):
 	
 		goal_drop_init_2 = PoseStamped()
 		goal_drop_init_2.header.frame_id = 'map'
-		goal_drop_init_2.pose.position.x = init_arm_pose_2[0]
-		goal_drop_init_2.pose.position.y = init_arm_pose_2[1]
+		goal_drop_init_2.pose.position.x = 3.5
+		goal_drop_init_2.pose.position.y = 0.0
 		goal_drop_init_2.pose.orientation.x = init_goal_theta_5[0]
 		goal_drop_init_2.pose.orientation.y = init_goal_theta_5[1]
 		goal_drop_init_2.pose.orientation.z = init_goal_theta_5[2]
@@ -348,8 +332,8 @@ class NavigationController(Node):
 
 		goal_drop_init_3 = PoseStamped()
 		goal_drop_init_3.header.frame_id = 'map'
-		goal_drop_init_3.pose.position.x = init_arm_pose_3[0]
-		goal_drop_init_3.pose.position.y = init_arm_pose_3[1]
+		goal_drop_init_3.pose.position.x = 5.9
+		goal_drop_init_3.pose.position.y = -2.0
 		goal_drop_init_3.pose.orientation.x = init_goal_theta_6[0]
 		goal_drop_init_3.pose.orientation.y = init_goal_theta_6[1]
 		goal_drop_init_3.pose.orientation.z = init_goal_theta_6[2]
@@ -358,8 +342,8 @@ class NavigationController(Node):
 		goal_drop_1 = PoseStamped()
 		goal_drop_1.header.frame_id = 'map'
 		goal_drop_1.header.stamp = self.navigator.get_clock().now().to_msg()
-		goal_drop_1.pose.position.x = 5.12
-		goal_drop_1.pose.position.y = -0.0418
+		goal_drop_1.pose.position.x = 3.35
+		goal_drop_1.pose.position.y = -0.2
 		goal_drop_1.pose.orientation.x = goal_theta_4[0]
 		goal_drop_1.pose.orientation.y = goal_theta_4[1]
 		goal_drop_1.pose.orientation.z = goal_theta_4[2]
@@ -367,36 +351,32 @@ class NavigationController(Node):
 	
 		goal_drop_2 = PoseStamped()
 		goal_drop_2.header.frame_id = 'map'
-		goal_drop_2.pose.position.x = 6.33
-		goal_drop_2.pose.position.y = -1.01
+		goal_drop_2.pose.position.x =  5.0
+		goal_drop_2.pose.position.y = 0.0
 		goal_drop_2.pose.orientation.x = goal_theta_5[0]
 		goal_drop_2.pose.orientation.y = goal_theta_5[1]
 		goal_drop_2.pose.orientation.z = goal_theta_5[2]
 		goal_drop_2.pose.orientation.w = goal_theta_5[3]
+    # - arm: [6.3, -0.05, 0.0]
 
 		goal_drop_3 = PoseStamped()
 		goal_drop_3.header.frame_id = 'map'
-		goal_drop_3.pose.position.x = arm_pose_3[0]
-		goal_drop_3.pose.position.y = arm_pose_3[1]
+		goal_drop_3.pose.position.x = 5.9
+		goal_drop_3.pose.position.y = -1.0
 		goal_drop_3.pose.orientation.x = goal_theta_6[0]
 		goal_drop_3.pose.orientation.y = goal_theta_6[1]
 		goal_drop_3.pose.orientation.z = goal_theta_6[2]
 		goal_drop_3.pose.orientation.w = goal_theta_6[3]
 
-
-		# Define other drop goals...
-
 		self.navigator.waitUntilNav2Active()
-		
-		# self.set_parameter()
 
-		# self.arm_request(rack_no = "3")
-		self.navigate_and_dock(goal_pick_1, goal_drop_1, goal_drop_init_1, orientation_rack_1, rack_list[0], "1")
-		# self.navigator.goToPose(goal_drop_2)
-		# self.nav_reach(goal_drop_2)
-		# self.move_with_linear_x(2.0,0.5,-0.95)
-		# self.navigate_and_dock(goal_pick_2, goal_drop_2, goal_drop_init_2, orientation_rack_2, rack_list[1], "2")
-		# self.move_with_linear_x(2.0,0.5,-0.95)
+		# self.arm_request(rack_no = "1")
+		# self.navigate_and_dock(goal_pick_1, goal_drop_1, goal_drop_init_1, orientation_rack_1, rack_list[0], "1",arm_yaw_1)
+		# self.move_with_linear_x(2.0,1,-0.95)
+		self.navigate_and_dock(goal_pick_3, goal_drop_2, goal_drop_init_2, theta_2, rack_list[1], "2",arm_yaw_2)
+		self.navigate_and_dock(goal_pick_2, goal_drop_3, goal_drop_init_3, theta_3, rack_list[2], "3",arm_yaw_3)
+		self.move_with_linear_x(2.0,1,-0.95)
+		self.move_with_linear_x(2.0,1,-0.95)
 
 		exit(0)
 

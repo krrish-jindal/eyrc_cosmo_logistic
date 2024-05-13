@@ -40,7 +40,7 @@ class MyRobotDockingController(Node):
 
 
 		# Subscribe to odometry data for robot pose information
-		self.odom_sub = self.create_subscription(Odometry, 'odom', self.odometry_callback, 10)
+		self.odom_sub = self.create_subscription(Odometry, '/odom', self.odometry_callback, 10)
 
 
 		self.ultra_sub = self.create_subscription(Float32MultiArray, 'ultrasonic_sensor_std_float', self.ultra_callback, 10)
@@ -62,7 +62,7 @@ class MyRobotDockingController(Node):
 		self.difference = 0
 		package_name = 'ebot_real_nav2'
 		config = "config/config.yaml"
-		self.flag =0
+		self.flag =1
 
 
 		ebot_nav2_dir = get_package_share_directory('ebot_real_nav2')
@@ -142,7 +142,7 @@ class MyRobotDockingController(Node):
 			#
 			self.difference = self.normalize_yaw_rack - self.normalize_yaw_bot
 
-			if self.orientation_dock ==True:
+			if self.orientation_dock == True:
 				print("YAW------------YAW",(self.rack_yaw[int(self.rack_no)-1]))
 				print("LIST---------",self.rack_yaw,self.rack_no)
 
@@ -152,10 +152,11 @@ class MyRobotDockingController(Node):
 				robot_head=str(self.robot_pose[2]/abs(self.robot_pose[2]))
 				print("ERRORS------",error,error2)
 
+# # [0.9, 2.04, 0.0]
 
 
 
-##  X DIRECTION POSS CORRECTION
+# ##  X DIRECTION POSS CORRECTION
 				
 				if 0.3 > abs(self.x_pose[int(self.rack_no) - 1][0] - self.robot_pose[0]) > 0.025  and robot_head== "1.0":
 
@@ -172,7 +173,7 @@ class MyRobotDockingController(Node):
 
 
 
-#   Y DIRECTION POSS CORRECTION
+# # #   Y DIRECTION POSS CORRECTION
 
 				elif 0.3 > abs(self.x_pose[int(self.rack_no) - 1][1] - self.robot_pose[1]) > 0.025  and robot_head== "1.0":
 					print(self.robot_pose[0],self.robot_pose[1],"---------33333333333",abs(self.x_pose[int(self.rack_no) - 1][1] - self.robot_pose[1]))
@@ -186,7 +187,7 @@ class MyRobotDockingController(Node):
 					self.vel_pub.publish(vel)
 
 
-#   DESIRE POSS REACH 
+# # #   DESIRE POSS REACH 
 					
 				else:
 
@@ -200,10 +201,15 @@ class MyRobotDockingController(Node):
 
 # START ORIENTATION CORRECTION
 					
-			elif self.flag == 1:
-				if abs(self.difference) > 0.1:
-					vel.angular.z = self.difference *0.9
+			if self.flag == 1:
+				print(abs(self.difference),"diff----")
+				if abs(self.difference)-0.01 > 0.07:
+					if self.difference > 0:
+						vel.angular.z = -self.difference *0.6 -0.2
+					else:
+						vel.angular.z = abs(self.difference) *0.6 +0.2
 					self.vel_pub.publish(vel)
+					
 
 
 
@@ -265,11 +271,11 @@ class MyRobotDockingController(Node):
 
 #   NO ULTRA SONIC DISTANCE ERROR DIRECT DOCKING
 					
-				if  self.usrleft_value >= 0.13:
+				if  self.usrleft_value >= 0.23:
 					print("===============")
 					print(self.usrleft_value)
 					self.orientation_dock = False
-					vel.linear.x = -self.usrleft_value * 0.48
+					vel.linear.x = -self.usrleft_value * 0.3
 					vel.angular.z = 0.0
 					self.vel_pub.publish(vel)
 					self.linear_dock = False
@@ -286,6 +292,7 @@ class MyRobotDockingController(Node):
 					self.linear_dock = True
 					self.is_docking = False
 					self.dock_aligned = True
+					self.orientation_dock = True
 				
 
 	# Callback function for the DockControl service
@@ -321,6 +328,7 @@ class MyRobotDockingController(Node):
 			self.get_logger().info("Waiting for alignment...")
 			self.controller_loop()
 			self.rate.sleep()
+			
 
 		# Set the service response indicating success
 		response.success = True

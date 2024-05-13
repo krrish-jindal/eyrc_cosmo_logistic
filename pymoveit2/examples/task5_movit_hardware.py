@@ -175,7 +175,7 @@ class endf(Node):
 
     def servo_active(self):
         switchParam = SwitchController.Request()
-        print("hello ")
+        print("hello")
         switchParam.deactivate_controllers = ["scaled_joint_trajectory_controller"]
         switchParam.activate_controllers = ["forward_position_controller"] # for servoing
         switchParam.strictness = 2
@@ -237,7 +237,7 @@ class endf(Node):
                     joint_positions_final_2 = (self.get_parameter("joint_positions_final_2").get_parameter_value().double_array_value)
                     joint_positions_final_3 = (self.get_parameter("joint_positions_final_3").get_parameter_value().double_array_value)
                     joint_positions_back = (self.get_parameter("joint_positions_back").get_parameter_value().double_array_value)
-
+                    joint_positions_negative = (self.get_parameter("joint_positions_negative").get_parameter_value().double_array_value)
 
  #  ARM Move To BOX 
 
@@ -245,9 +245,9 @@ class endf(Node):
                         __twist_msg = TwistStamped()
                         __twist_msg.header.stamp = self.get_clock().now().to_msg()
                         __twist_msg.header.frame_id = ur5.base_link_name()
-                        __twist_msg.twist.linear.y = round((box49.transform.translation.y) - (tool0.transform.translation.y),4) *2
+                        __twist_msg.twist.linear.y = round((box49.transform.translation.y) - (tool0.transform.translation.y),4) *2 
                         __twist_msg.twist.linear.x = round((box49.transform.translation.x) - (tool0.transform.translation.x),4) *2
-                        __twist_msg.twist.linear.z = round((box49.transform.translation.z) - (tool0.transform.translation.z),4) *2
+                        __twist_msg.twist.linear.z = round((box49.transform.translation.z) - (tool0.transform.translation.z),4) *2 
                         self.twist_pub.publish(__twist_msg)
                         print("SERVO_START")
 
@@ -281,7 +281,7 @@ class endf(Node):
                         __twist_msg = TwistStamped()
                         __twist_msg.header.stamp = self.get_clock().now().to_msg()
                         __twist_msg.header.frame_id = ur5.base_link_name()
-                        __twist_msg.twist.linear.z = 0.1
+                        __twist_msg.twist.linear.z = 0.04
                         __twist_msg.twist.linear.y = -0.2
                         self.twist_pub.publish(__twist_msg)
                     elif self.variable_b == "3" and (round(tool0.transform.translation.y,2) <= 0.25):
@@ -303,7 +303,7 @@ class endf(Node):
                         __twist_msg = TwistStamped()
                         __twist_msg.header.stamp = self.get_clock().now().to_msg()
                         __twist_msg.header.frame_id = ur5.base_link_name()
-                        __twist_msg.twist.linear.z = 0.1
+                        __twist_msg.twist.linear.z = -0.08
                         __twist_msg.twist.linear.x = -0.4
                         self.twist_pub.publish(__twist_msg)
                     elif self.variable_b == "2" and (round(tool0.transform.translation.x,2) <= 0.23):
@@ -315,17 +315,23 @@ class endf(Node):
                         break
 
 
+
  #  RIGHT RACK 
 
                     elif self.variable_b == "1" and (round(tool0.transform.translation.y,2) < -0.26):
                         __twist_msg = TwistStamped()
+                        print("--------------------------------------------------------------")
                         __twist_msg.header.stamp = self.get_clock().now().to_msg()
                         __twist_msg.header.frame_id = ur5.base_link_name()
-                        __twist_msg.twist.linear.z = 0.4
-                        __twist_msg.twist.linear.x = -0.4
+                        __twist_msg.twist.linear.z = 0.07
+                        __twist_msg.twist.linear.y = 0.5
                         self.twist_pub.publish(__twist_msg)
                     elif self.variable_b == "1" and (round(tool0.transform.translation.y,2) >= -0.26):
                         self.trajactory()
+                        self.moveit2.move_to_configuration(joint_positions_negative)
+                        self.moveit2.wait_until_executed()
+                        self.moveit2.move_to_configuration(joint_positions_negative)
+                        self.moveit2.wait_until_executed()
                         self.moveit2.move_to_configuration(joint_positions_back)
                         self.moveit2.wait_until_executed()
                         self.moveit2.move_to_configuration(joint_positions_back)
@@ -377,11 +383,12 @@ def main():
             box = enftf.tf_buffer.lookup_transform('base_link', enftf.obj_aruco, rclpy.time.Time())
             roll , pitch , yaw  = euler_from_quaternion([box.transform.rotation.x, box.transform.rotation.y, box.transform.rotation.z, box.transform.rotation.w])
             print(round(yaw,2))
+            print(enftf.variable_a)
             if enftf.variable_a == True:
 
                 print("You are my special")
 
-                if enftf.variable_b == "3":
+                if enftf.variable_b == "1":
                     enftf.trajactory()
                     enftf.moveit2.move_to_configuration(joint_positions_negative)
                     enftf.moveit2.wait_until_executed()
@@ -392,9 +399,9 @@ def main():
                     enftf.moveit2.wait_until_executed()
                     enftf.moveit2.move_to_configuration(joint_positions_initial)
                     enftf.moveit2.wait_until_executed()
-                    enftf.variable_a == False
+                    # enftf.variable_a = False
 
-                elif enftf.variable_b == "1":
+                elif enftf.variable_b == "3":
                     enftf.trajactory()
                     enftf.moveit2.move_to_configuration(joint_positions_positive)
                     enftf.moveit2.wait_until_executed()
@@ -403,7 +410,7 @@ def main():
                     enftf.trajactory()
                     enftf.moveit2.move_to_configuration(joint_positions_initial)
                     enftf.moveit2.wait_until_executed()
-                    enftf.variable_a == False
+                    enftf.variable_a = False
 
                 elif enftf.variable_b == "2":
                     enftf.servo_active()
@@ -411,10 +418,10 @@ def main():
                     enftf.trajactory()
                     enftf.moveit2.move_to_configuration(joint_positions_initial)
                     enftf.moveit2.wait_until_executed()
-                    enftf.variable_a == False
+                    # enftf.variable_a = False
 
         except Exception as e:
-            print("Main Function")
+            print(e)
 
 if __name__ == "__main__":
 	main()

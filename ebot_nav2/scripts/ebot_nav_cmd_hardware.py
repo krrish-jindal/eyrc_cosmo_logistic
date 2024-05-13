@@ -28,9 +28,10 @@ class NavigationController(Node):
 		self.client_docking = self.create_client(srv_type=DockSw, srv_name='dock_control')
 		self.vel_pub = self.create_publisher(Twist, "/cmd_vel", 10)
 		self.vel_msg = Twist()
+		self.odom_sub = self.create_subscription(Odometry, '/odometry/filtered', self.odometry_callback, 10)
 		self.navigator = BasicNavigator()
 		self.flag=False
-		self.robot_pose = [0, 0]
+		self.robot_pose = [0,0,0] 
 
 
 
@@ -58,11 +59,6 @@ class NavigationController(Node):
 
 		atc = self.attach.call_async(req)
 		rclpy.spin_until_future_complete(self, atc)
-		self.vel_msg.linear.x = 0.2
-		self.vel_pub.publish(self.vel_msg)
-		time.sleep(2)
-		self.vel_msg.linear.x = 0.0
-		self.vel_pub.publish(self.vel_msg)
 		return atc.result()
 
 	def rack_detach(self, rack):
@@ -72,11 +68,6 @@ class NavigationController(Node):
 
 		atc = self.attach.call_async(req)
 		rclpy.spin_until_future_complete(self, atc)
-		self.vel_msg.linear.x = 0.2
-		self.vel_pub.publish(self.vel_msg)
-		time.sleep(2)
-		self.vel_msg.linear.x = 0.0
-		self.vel_pub.publish(self.vel_msg)
 		return atc.result()
 
 	def normalize_angle(self, angle):
@@ -87,7 +78,7 @@ class NavigationController(Node):
 	def nav_coordinate(self,angle,x,y,poss):
 		
 		if poss=="final":
-			d=0.65
+			d=0.85
 		else:
 			d=1.0
 			
@@ -113,23 +104,20 @@ class NavigationController(Node):
 		end_time2 = end_time + duration
 
 		# Create a Twist message to control the linear.x (forward movement)
-		vel_msg = Twist()
-
-		vel_msg.linear.x = linear_x
+		self.vel_msg.linear.x = linear_x
 
 		while time.time() < end_time:
-			self.vel_pub.publish(vel_msg)  # Publish the Twist message to control the robot's movement
+			self.vel_pub.publish(self.vel_msg)  # Publish the Twist message to control the robot's movement
 
-		vel_msg.linear.x = 0.0
-		vel_msg.angular.z = angular_z
+		self.vel_msg.linear.x = 0.0
+		self.vel_msg.angular.z = angular_z
 
 		while time.time() < end_time2:
-			self.vel_pub.publish(vel_msg) 
+			self.vel_pub.publish(self.vel_msg) 
 
-		vel_msg.linear.x = 0.0
-		vel_msg.angular.z = 0.0
-		self.vel_pub.publish(vel_msg)
-	
+		self.vel_msg.linear.x = 0.0
+		self.vel_msg.angular.z = 0.0
+		self.vel_pub.publish(self.vel_msg)
 
 	def nav_reach(self, goal):
 		while not self.navigator.isTaskComplete():
@@ -147,30 +135,27 @@ class NavigationController(Node):
 			print('Goal failed!')
 		else:
 			print('Goal has an invalid return status!')
-	def set_parameter(self):
 
-		parameter_name = '/local_costmap/local_costmap footprint'
-		parameter_value = '[ [0.4, 0.3], [0.4, -0.3], [-0.4, -0.3], [-0.4,-0.5], [-0.65,-0.5], [-0.65,0.5], [-0.4,0.5], [-0.4, 0.3] ]'
 
-		self.set_parameters([
-			rclpy.parameter.Parameter(parameter_name, rclpy.Parameter.Type.STRING, parameter_value)
-		])
-
-	def navigate_and_dock(self, goal_pick, goal_drop, goal_int, orientation_rack, rack,rack_no):
+	def navigate_and_dock(self, goal_pick, goal_drop, goal_int, orientation_rack, rack,rack_no,yaw):
 		self.rack_attach(rack)
 		self.navigator.goToPose(goal_pick)
 		self.nav_reach(goal_pick)
 
 		self.send_request(orientation_rack, rack_no)
-		#self.rack_attach(rack)
-
+		self.rack_attach(rack)
+		self.move_with_linear_x(3.0,-0.1,0.0)
+		self.move_with_linear_x(4.0,0.1,0.9)
 		self.navigator.goToPose(goal_int)
 		self.nav_reach(goal_int)
+		# self.yaw_correction(yaw)
+		# self.move_with_linear_x(2.0,-0.2,0.0)
 		self.navigator.goToPose(goal_drop)
 		self.nav_reach(goal_drop)
+
 		self.rack_detach(rack)
 		self.arm_request(rack_no = str(rack_no))
-    
+	
 
 
 	def main(self):
@@ -213,25 +198,29 @@ class NavigationController(Node):
 
 
 		theta_4=self.normalize_angle(orientation_arm)
-		arm_pose_1=self.nav_coordinate(orientation_arm+90.0,arm_coordinates[0],arm_coordinates[1],"final")
-		goal_theta_4= self.nav_theta(orientation_arm+90.0,"arm")
+		arm_pose_1=self.nav_coordinate(orientation_arm-1.57,arm_coordinates[0],arm_coordinates[1],"final")
+		goal_theta_4= self.nav_theta(orientation_arm-1.57,"arm")
 
 		theta_5=self.normalize_angle(orientation_arm)
 		arm_pose_2=self.nav_coordinate(orientation_arm,arm_coordinates[0],arm_coordinates[1],"final")
 		goal_theta_5= self.nav_theta(orientation_arm,"arm")
 
 		theta_6=self.normalize_angle(orientation_arm)
-		arm_pose_3=self.nav_coordinate(orientation_arm-90.0,arm_coordinates[0],arm_coordinates[1],"final")
-		goal_theta_6= self.nav_theta(orientation_arm-90.0,"arm")
+		arm_pose_3=self.nav_coordinate(orientation_arm+1.57,arm_coordinates[0],arm_coordinates[1],"final")
+		goal_theta_6= self.nav_theta(orientation_arm+1.57,"arm")
 
-		init_arm_pose_1=self.nav_coordinate(orientation_arm+90.0,arm_coordinates[0],arm_coordinates[1],"initial")
-		init_goal_theta_4= self.nav_theta(orientation_arm+90.0,"arm")
+		init_arm_pose_1=self.nav_coordinate(orientation_arm-1.57,arm_coordinates[0],arm_coordinates[1],"initial")
+		init_goal_theta_4= self.nav_theta(orientation_arm-1.57,"arm")
 
 		init_arm_pose_2=self.nav_coordinate(orientation_arm,arm_coordinates[0],arm_coordinates[1],"initial")
 		init_goal_theta_5= self.nav_theta(orientation_arm,"arm")
 
-		init_arm_pose_3=self.nav_coordinate(orientation_arm-90.0,arm_coordinates[0],arm_coordinates[1],"initial")
-		init_goal_theta_6= self.nav_theta(orientation_arm-90.0,"arm")
+		init_arm_pose_3=self.nav_coordinate(orientation_arm+1.57,arm_coordinates[0],arm_coordinates[1],"initial")
+		init_goal_theta_6= self.nav_theta(orientation_arm+1.57,"arm")
+
+		arm_yaw_1= orientation_arm+1.57
+		arm_yaw_2= orientation_arm
+		arm_yaw_3= orientation_arm-1.57
 
 		goal_pick_1 = PoseStamped()
 		goal_pick_1.header.frame_id = 'map'
@@ -263,21 +252,11 @@ class NavigationController(Node):
 		goal_pick_3.pose.orientation.z = goal_theta_3[2]
 		goal_pick_3.pose.orientation.w = goal_theta_3[3]
 
-
-		goal_drop_init_1 = PoseStamped()
-		goal_drop_init_1.header.frame_id = 'map'
-		goal_drop_init_1.header.stamp = self.navigator.get_clock().now().to_msg()
-		goal_drop_init_1.pose.position.x = init_arm_pose_1[0]
-		goal_drop_init_1.pose.position.y = init_arm_pose_1[1]
-		goal_drop_init_1.pose.orientation.x = init_goal_theta_4[0]
-		goal_drop_init_1.pose.orientation.y = init_goal_theta_4[1]
-		goal_drop_init_1.pose.orientation.z = init_goal_theta_4[2]
-		goal_drop_init_1.pose.orientation.w = init_goal_theta_4[3]
 	
 		goal_drop_init_2 = PoseStamped()
 		goal_drop_init_2.header.frame_id = 'map'
-		goal_drop_init_2.pose.position.x = init_arm_pose_2[0]
-		goal_drop_init_2.pose.position.y = init_arm_pose_2[1]
+		goal_drop_init_2.pose.position.x = 3.5
+		goal_drop_init_2.pose.position.y = 0.0
 		goal_drop_init_2.pose.orientation.x = init_goal_theta_5[0]
 		goal_drop_init_2.pose.orientation.y = init_goal_theta_5[1]
 		goal_drop_init_2.pose.orientation.z = init_goal_theta_5[2]
@@ -285,8 +264,8 @@ class NavigationController(Node):
 
 		goal_drop_init_3 = PoseStamped()
 		goal_drop_init_3.header.frame_id = 'map'
-		goal_drop_init_3.pose.position.x = init_arm_pose_3[0]
-		goal_drop_init_3.pose.position.y = init_arm_pose_3[1]
+		goal_drop_init_3.pose.position.x = 5.9
+		goal_drop_init_3.pose.position.y = -2.0
 		goal_drop_init_3.pose.orientation.x = init_goal_theta_6[0]
 		goal_drop_init_3.pose.orientation.y = init_goal_theta_6[1]
 		goal_drop_init_3.pose.orientation.z = init_goal_theta_6[2]
@@ -295,8 +274,8 @@ class NavigationController(Node):
 		goal_drop_1 = PoseStamped()
 		goal_drop_1.header.frame_id = 'map'
 		goal_drop_1.header.stamp = self.navigator.get_clock().now().to_msg()
-		goal_drop_1.pose.position.x = arm_pose_1[0]
-		goal_drop_1.pose.position.y = arm_pose_1[1]
+		goal_drop_1.pose.position.x = 3.35
+		goal_drop_1.pose.position.y = -0.2
 		goal_drop_1.pose.orientation.x = goal_theta_4[0]
 		goal_drop_1.pose.orientation.y = goal_theta_4[1]
 		goal_drop_1.pose.orientation.z = goal_theta_4[2]
@@ -304,29 +283,31 @@ class NavigationController(Node):
 	
 		goal_drop_2 = PoseStamped()
 		goal_drop_2.header.frame_id = 'map'
-		goal_drop_2.pose.position.x = arm_pose_2[0]
-		goal_drop_2.pose.position.y = arm_pose_2[1]
+		goal_drop_2.pose.position.x =  4.95
+		goal_drop_2.pose.position.y = 0.0
 		goal_drop_2.pose.orientation.x = goal_theta_5[0]
 		goal_drop_2.pose.orientation.y = goal_theta_5[1]
 		goal_drop_2.pose.orientation.z = goal_theta_5[2]
 		goal_drop_2.pose.orientation.w = goal_theta_5[3]
+    # - arm: [6.3, -0.05, 0.0]
 
 		goal_drop_3 = PoseStamped()
 		goal_drop_3.header.frame_id = 'map'
-		goal_drop_3.pose.position.x = arm_pose_3[0]
-		goal_drop_3.pose.position.y = arm_pose_3[1]
+		goal_drop_3.pose.position.x = 5.9
+		goal_drop_3.pose.position.y = -1.0
 		goal_drop_3.pose.orientation.x = goal_theta_6[0]
 		goal_drop_3.pose.orientation.y = goal_theta_6[1]
 		goal_drop_3.pose.orientation.z = goal_theta_6[2]
 		goal_drop_3.pose.orientation.w = goal_theta_6[3]
 
+
 		self.navigator.waitUntilNav2Active()
 
 		self.arm_request(rack_no = "1")
-		self.navigate_and_dock(goal_pick_3, goal_drop_3, goal_drop_init_3, orientation_rack_3, rack_list[2], "3")
+		self.navigate_and_dock(goal_pick_3, goal_drop_2, goal_drop_init_2, theta_2, rack_list[1], "2",arm_yaw_2)
 		self.move_with_linear_x(2.0,0.5,-0.95)
 
-		self.navigate_and_dock(goal_pick_2, goal_drop_2, goal_drop_init_2, orientation_rack_2, rack_list[1], "2")
+		self.navigate_and_dock(goal_pick_2, goal_drop_3, goal_drop_init_3, theta_3, rack_list[2], "3",arm_yaw_3)
 		self.move_with_linear_x(2.0,0.5,-0.95)
 		
 		exit(0)

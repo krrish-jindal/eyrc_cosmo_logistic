@@ -9,12 +9,12 @@
 *        =============================================
 *
 *
-*  Filename:			ebot_bringup_launch.py
+*  Filename:			ebot_nav2_bringup.launch.py
 *  Description:         Use this file to start navigation on pre-generated map.
 *  Created:				16/07/2023
-*  Last Modified:	    10/09/2023
-*  Modified by:         Ravikumar
-*  Author:				e-Yantra Team
+*  Last Modified:	    23/10/2023
+*  Modified by:         Archit
+*  Author:				Archit e-Yantra Team
 *  
 *****************************************************************************************
 '''
@@ -29,20 +29,16 @@ from launch.actions import (DeclareLaunchArgument, GroupAction,
 from launch.conditions import IfCondition
 from launch.launch_description_sources import PythonLaunchDescriptionSource
 from launch.substitutions import LaunchConfiguration, PythonExpression, FindExecutable
+from launch_ros.substitutions import FindPackageShare
 from launch_ros.actions import Node
 from launch_ros.actions import PushRosNamespace
 from nav2_common.launch import RewrittenYaml
-
+import xacro
 
 def generate_launch_description():
     bringup_dir = get_package_share_directory('nav2_bringup')
-    moveit_dir = get_package_share_directory('ur5_moveit')
     launch_dir = os.path.join(bringup_dir, 'launch')
-    ebot_nav2_dir = get_package_share_directory('ebot_nav2')
-    description_dir = get_package_share_directory('eyantra_warehouse')
-    py_moveit_dir = get_package_share_directory('pymoveit2')
-    opencv_dir = get_package_share_directory('ur_description')
-
+    ebot_real_nav2_dir = get_package_share_directory('ebot_real_nav2')
 
     namespace = LaunchConfiguration('namespace')
     use_namespace = LaunchConfiguration('use_namespace')
@@ -79,7 +75,7 @@ def generate_launch_description():
 
     declare_use_namespace_cmd = DeclareLaunchArgument(
         'use_namespace',
-        default_value='False',
+        default_value='false',
         description='Whether to apply a namespace to the navigation stack')
 
     declare_slam_cmd = DeclareLaunchArgument(
@@ -89,17 +85,18 @@ def generate_launch_description():
 
     declare_map_yaml_cmd = DeclareLaunchArgument(
         'map',
-        default_value=os.path.join(ebot_nav2_dir, 'maps', 'map.yaml'),
+        default_value=os.path.join(ebot_real_nav2_dir, 'maps', 'map.yaml'),
         description='Full path to map yaml file to load')
 
     declare_use_sim_time_cmd = DeclareLaunchArgument(
         'use_sim_time',
-        default_value='True',
+        default_value='false',
         description='Use simulation (Gazebo) clock if true')
 
     declare_params_file_cmd = DeclareLaunchArgument(
         'params_file',
-        default_value=os.path.join(ebot_nav2_dir, 'params', 'nav2_params.yaml'),
+        # default_value=os.path.join(ebot_real_nav2_dir, 'params', 'nav2_params.yaml'),         # with odom
+        default_value=os.path.join(ebot_real_nav2_dir, 'params', 'nav2_params_filtered.yaml'),  # with imu sensor fusion, filtered odometry
         description='Full path to the ROS2 parameters file to use for all launched nodes')
 
     declare_autostart_cmd = DeclareLaunchArgument(
@@ -120,34 +117,13 @@ def generate_launch_description():
 
     declare_mapper_online_async_param_cmd = DeclareLaunchArgument(
         'async_param',
-        default_value=os.path.join(ebot_nav2_dir, 'config', 'mapper_params_online_async.yaml'),
+        default_value=os.path.join(ebot_real_nav2_dir, 'config', 'mapper_params_online_async.yaml'),
         description='Set mappers online async param file')
 
-    mapper_online_async_param_launch = IncludeLaunchDescription(
-        PythonLaunchDescriptionSource(
-            os.path.join(get_package_share_directory('slam_toolbox'), 'launch', 'online_async_launch.py'),
-        ),
-        launch_arguments=[('slam_params_file', LaunchConfiguration('async_param'))],
-    )
-    
     declare_rviz_config_file_cmd = DeclareLaunchArgument(
         'rviz_config',
-        default_value=os.path.join(ebot_nav2_dir, 'rviz', 'nav2_default_view.rviz'),
+        default_value=os.path.join(ebot_real_nav2_dir, 'rviz', 'nav2_default_view.rviz'),
         description='Full path to the RVIZ config file to use')
-
-    docking_server = Node(
-        package='ebot_docking',
-        executable='ebot_docking_boilerplate.py',
-        name='docking',
-        output='screen'
-    )
-
-    # ebot_nav_cmd = Node(
-    #     package='ebot_nav2',
-    #     executable='ebot_nav_cmd.py',
-    #     name='ebot_nav',
-    #     output='screen'
-    # )
 
     # Launch rviz
     start_rviz_cmd = Node(
@@ -157,39 +133,35 @@ def generate_launch_description():
         arguments=['-d', rviz_config_file],
         output='screen')
     
-    # static_tf_publisher_cmd = Node(
-    #     package='tf2_ros',
-    #     executable='static_transform_publisher',
-    #     arguments=[
-    #         '-1.6', '-2.4', '-0.5',
-    #         '0', '0', '-3.14', # No rotation for static transform
-    #         'world', 'map'
-    #     ],
-    #     output='screen'
-    # )
+    # print("!!! rviz_config_file !!!",)
+    
+    mapper_online_async_param_launch = IncludeLaunchDescription(
+        PythonLaunchDescriptionSource(
+            os.path.join(get_package_share_directory('slam_toolbox'), 'launch', 'online_async_launch.py'),
+        ),
+        launch_arguments=[('slam_params_file', LaunchConfiguration('async_param'))],
+    )
+
     robot_localization_node = Node(
        package='robot_localization',
        executable='ekf_node',
        name='ekf_filter_node',
        output='screen',
-       parameters=[os.path.join(ebot_nav2_dir, 'config/ekf.yaml'), {'use_sim_time': use_sim_time}]
-)   
-    pymoveit2_node = Node(
-        package='pymoveit2',
-        executable='task3b.py',
-        name="task3b_moveit",
-        output="screen"
+       parameters=[os.path.join(ebot_real_nav2_dir, 'config', 'ekf.yaml'), {'use_sim_time': use_sim_time}] ##Loads the ekf.yaml file
     )
     
-    sim_launch = IncludeLaunchDescription(
-        PythonLaunchDescriptionSource(
-            os.path.join(description_dir, 'launch', 'task4c.launch.py')))
-    
-    moveit_spawn = IncludeLaunchDescription(
-        PythonLaunchDescriptionSource(
-            os.path.join(moveit_dir, 'launch', 'spawn_ur5_launch_moveit.launch.py')
-        )
+    pkg_share = FindPackageShare(package='ebot_real_nav2').find('ebot_real_nav2')
+    xacro_file = os.path.join(pkg_share, 'models/','ebot/', 'ebot_trolley.xacro')
+    assert os.path.exists(xacro_file), "The box_bot.xacro doesnt exist in "+str(xacro_file)
+    robot_description_config = xacro.process_file(xacro_file)
+    robot_description = robot_description_config.toxml()
+
+    robot_state_publisher_node = Node(
+        package='robot_state_publisher',
+        executable='robot_state_publisher',
+        parameters=[{"robot_description": robot_description}]
     )
+    
     bringup_cmd_group = GroupAction([
         PushRosNamespace(
             condition=IfCondition(use_namespace),
@@ -204,6 +176,7 @@ def generate_launch_description():
             arguments=['--ros-args', '--log-level', log_level],
             remappings=remappings,
             output='screen'),
+            
 
         IncludeLaunchDescription(
             PythonLaunchDescriptionSource(os.path.join(launch_dir, 'slam_launch.py')),
@@ -237,15 +210,18 @@ def generate_launch_description():
                               'use_respawn': use_respawn,
                               'container_name': 'nav2_container'}.items()),
     ])
-
     opencv_node = Node(
-        package='ur_description',
-        executable='task1a.py',
+        package='pymoveit2',
+        executable='cam_script.py',
         name='opencv',
         output='screen'
     )
-
-
+    docking_server = Node(
+        package='ebot_control',
+        executable='ebot_dock',
+        name='docking',
+        output='screen'
+    )
     ld = LaunchDescription()
     ld.add_action(
         ExecuteProcess(
@@ -272,16 +248,15 @@ def generate_launch_description():
     ld.add_action(declare_use_composition_cmd)
     ld.add_action(declare_use_respawn_cmd)
     ld.add_action(declare_log_level_cmd)
-    ld.add_action(declare_rviz_config_file_cmd)
-    ld.add_action(start_rviz_cmd)
+    # ld.add_action(declare_mapper_online_async_param_cmd)
     ld.add_action(robot_localization_node)
-    ld.add_action(sim_launch)
-    ld.add_action(moveit_spawn)
-    ld.add_action(bringup_cmd_group)
-    ld.add_action(docking_server)
-    ld.add_action(opencv_node)
-    # ld.add_action(static_tf_publisher_cmd)
-    # ld.add_action(ebot_nav_cmd)
+    ld.add_action(robot_state_publisher_node)
+    ld.add_action(declare_rviz_config_file_cmd)
 
+    ld.add_action(start_rviz_cmd)
+    # ld.add_action(opencv_node)
+    # ld.add_action(docking_server)
+    # ld.add_action(mapper_online_async_param_launch)
+    ld.add_action(bringup_cmd_group)
 
     return ld

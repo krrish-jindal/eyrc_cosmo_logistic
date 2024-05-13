@@ -1,11 +1,11 @@
 amcl:
   ros__parameters:
     use_sim_time: True
-    alpha1: 0.00005   ## alpha's are related to odom model tuning, refer Nav2 Docs
-    alpha2: 0.00005
-    alpha3: 0.00005
-    alpha4: 0.00005
-    alpha5: 0.00005
+    alpha1: 0.02   ## alpha's are related to odom model tuning, refer Nav2 Docs
+    alpha2: 0.02
+    alpha3: 0.02
+    alpha4: 0.1
+    alpha5: 0.02
     base_frame_id: "base_footprint" #
     beam_skip_distance: 0.5
     beam_skip_error_threshold: 0.9
@@ -131,18 +131,18 @@ controller_server:
       stateful: True
       plugin: "nav2_controller::SimpleGoalChecker"
       xy_goal_tolerance: 0.25
-      yaw_goal_tolerance: 0.10
+      yaw_goal_tolerance: 0.20
     # DWB parameters
     FollowPath:
       plugin: "dwb_core::DWBLocalPlanner"
       debug_trajectory_details: True
-      min_vel_x: -0.5
+      min_vel_x: -0.6
       min_vel_y: 0.0
-      max_vel_x: 1.3
+      max_vel_x: 0.6
       max_vel_y: 0.0
-      max_vel_theta: 2.2
-      min_speed_xy: 0.0
-      max_speed_xy: 0.26
+      max_vel_theta: 2.2  
+      min_speed_xy: -0.2
+      max_speed_xy: 0.2
       min_speed_theta: -2.2
 
       acc_lim_x: 2.9
@@ -160,7 +160,6 @@ controller_server:
       linear_granularity: 0.05
       angular_granularity: 0.025
       transform_tolerance: 0.3
-      xy_goal_tolerance: 0.25
       trans_stopped_velocity: 0.25
       short_circuit_trajectory_evaluation: True
       stateful: True
@@ -200,14 +199,14 @@ local_costmap:
       rolling_window: true
       width: 3
       height: 3
-      resolution: 0.05
+      resolution: 0.1
       footprint: "[ [0.4, 0.3], [0.4, -0.3], [-0.4, -0.3], [-0.4, 0.3] ]"
       footprint_padding: 0.01
       plugins: ["voxel_layer", "inflation_layer"]
       inflation_layer:
         plugin: "nav2_costmap_2d::InflationLayer"
-        cost_scaling_factor: 3.0
-        inflation_radius: 0.45
+        cost_scaling_factor: 2.0
+        inflation_radius: 0.35
       voxel_layer:
         plugin: "nav2_costmap_2d::VoxelLayer"
         enabled: True
@@ -241,14 +240,14 @@ local_costmap:
 global_costmap:
   global_costmap:
     ros__parameters:
-      update_frequency: 1.0
-      publish_frequency: 1.0
+      update_frequency: 5.0
+      publish_frequency: 2.0
       global_frame: map
       robot_base_frame: "base_footprint"
       use_sim_time: True
       footprint: "[ [0.4, 0.3], [0.4, -0.3], [-0.4, -0.3], [-0.4, 0.3] ]"
-      footprint_padding: 0.009999999776482582
-      resolution: 0.05
+      footprint_padding: 0.0
+      resolution: 0.1
       track_unknown_space: true
       plugins: ["static_layer", "obstacle_layer", "inflation_layer"]
       obstacle_layer:
@@ -270,8 +269,8 @@ global_costmap:
         map_subscribe_transient_local: True
       inflation_layer:
         plugin: "nav2_costmap_2d::InflationLayer"
-        cost_scaling_factor: 5.0
-        inflation_radius: 0.55
+        cost_scaling_factor: 2.0
+        inflation_radius: 0.65
       always_send_full_costmap: True
   global_costmap_client:
     ros__parameters:
@@ -350,8 +349,8 @@ velocity_smoother:
     smoothing_frequency: 20.0
     scale_velocities: False
     feedback: "OPEN_LOOP"
-    max_velocity: [1.6, 0.0, 2.0]
-    min_velocity: [-1.6, 0.0, -2.0]
+    max_velocity: [1.0, 0.0, 2.0]
+    min_velocity: [-1.0, 0.0, -2.0]
     max_accel: [1.5, 0.0, 6.2]
     max_decel: [-1.5, 0.0, -6.2]
     odom_topic: "/odometry/filtered"
